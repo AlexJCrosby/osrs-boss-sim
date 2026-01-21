@@ -1,0 +1,45 @@
+:root {
+  --hudH: 48px; /* adjust if your header is taller */
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+.hud {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(23, 26, 33, 0.92);
+  border-bottom: 1px solid #222734;
+  z-index: 10;
+}
+
+.hud button {
+  margin-left: auto;
+  padding: 8px 12px;
+  border: 1px solid #2b3346;
+  background: #10131a;
+  color: var(--text);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.hint { color: var(--muted); font-size: 13px; }
+
+canvas#game {
+  position: fixed;
+  left: 0;
+  top: var(--hudH);
+  width: 100vw;
+  height: calc(100vh - var(--hudH));
+  display: block;
+}
