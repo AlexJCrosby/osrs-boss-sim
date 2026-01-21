@@ -77,7 +77,7 @@ scene.add(targetRing);
 
 // Right-click to set target
 canvas.addEventListener("mousedown", (e) => {
-  if (e.button !== 2) return;
+  if (e.button !== 0) return;
   const hit = pickTileFromMouse(e);
   if (!hit) return;
 
@@ -97,65 +97,88 @@ setInterval(() => {
 }, TICK_MS);
 
 // ===== Camera controls =====
-// keys
+// ===== Orbit camera around player (WASD rotates) =====
 const keys = new Set();
 window.addEventListener("keydown", (e) => keys.add(e.key.toLowerCase()));
 window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
 
-// mouse drag look
+// Orbit parameters
+let orbitYaw = Math.PI;    // rotation around Y axis
+let orbitPitch = 0.65;     // tilt downward (0 = horizontal, ~0.8 good)
+let orbitRadius = 14;      // distance from player
+
+// Tuning
+const YAW_SPEED = 1.8;     // radians/sec (WASD)
+const PITCH_SPEED = 1.4;   // radians/sec (optional)
+const MIN_PITCH = 0.2;
+const MAX_PITCH = 1.2;
+
+// If you want mouse drag to rotate too, keep this:
+// Prevent right-click menu (needed for Alt+RMB drag)
+canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+// Alt + Right-click drag to look around
 let dragging = false;
 let lastX = 0, lastY = 0;
 
-// Initialise yaw/pitch so the camera looks toward center
-let yaw = Math.PI;    // facing “back” toward the grid
-let pitch = -0.35;
-
 canvas.addEventListener("mousedown", (e) => {
-  if (e.button !== 0) return;
+  // Right mouse button is 2
+  if (e.button !== 2) return;
+  if (!e.altKey) return;
+
   dragging = true;
   lastX = e.clientX;
   lastY = e.clientY;
 });
+
 window.addEventListener("mouseup", () => (dragging = false));
+
 window.addEventListener("mousemove", (e) => {
   if (!dragging) return;
+
   const dx = e.clientX - lastX;
   const dy = e.clientY - lastY;
   lastX = e.clientX;
   lastY = e.clientY;
 
-  yaw -= dx * 0.003;
-  pitch -= dy * 0.003;
-  pitch = clamp(pitch, -1.2, 0.1);
+  // Adjust signs if you want to invert
+  orbitYaw -= dx * 0.004;
+  orbitPitch += dy * 0.004;
+  orbitPitch = clamp(orbitPitch, MIN_PITCH, MAX_PITCH);
 });
 
+
 function updateCamera(dt) {
-  // forward vector from yaw/pitch
-  const forward = new THREE.Vector3(
-    Math.sin(yaw) * Math.cos(pitch),
-    Math.sin(pitch),
-    Math.cos(yaw) * Math.cos(pitch)
-  ).normalize();
+  // WASD rotates around player (no translation)
+  // A/D: orbit left/right
+  if (keys.has("d")) orbitYaw += YAW_SPEED * dt;
+  if (keys.has("a")) orbitYaw -= YAW_SPEED * dt;
 
-  const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+  // Optional: W/S adjust pitch (tilt up/down)
+  if (keys.has("s")) orbitPitch -= PITCH_SPEED * dt;
+  if (keys.has("w")) orbitPitch += PITCH_SPEED * dt;
+  orbitPitch = clamp(orbitPitch, MIN_PITCH, MAX_PITCH);
 
-  const speed = 8; // units per second
-  const move = new THREE.Vector3();
+  // Camera position relative to player (player mesh is centered in tile)
+  const target = new THREE.Vector3(
+    player.x + 0.5,
+    0.45,
+    player.y + 0.5
+  );
 
-  if (keys.has("w")) move.add(forward);
-  if (keys.has("s")) move.sub(forward);
-  if (keys.has("d")) move.add(right);
-  if (keys.has("a")) move.sub(right);
+  // Convert spherical coords → Cartesian
+  const x = target.x + orbitRadius * Math.sin(orbitYaw) * Math.cos(orbitPitch);
+  const z = target.z + orbitRadius * Math.cos(orbitYaw) * Math.cos(orbitPitch);
+  const y = target.y + orbitRadius * Math.sin(orbitPitch);
 
-  move.y = 0; // keep horizontal
-  if (move.lengthSq() > 0) {
-    move.normalize().multiplyScalar(speed * dt);
-    camera.position.add(move);
-  }
+  camera.position.set(x, y, z);
+  camera.lookAt(target);
 
-  // look where we’re facing
-  const lookTarget = new THREE.Vector3().copy(camera.position).add(forward);
-  camera.lookAt(lookTarget);
+  canvas.addEventListener("wheel", (e) => {
+  orbitRadius += Math.sign(e.deltaY) * 0.5;
+  orbitRadius = clamp(orbitRadius, 6, 15);
+  e.preventDefault();
+}, { passive: false });
 }
 
 // ===== Game logic =====
