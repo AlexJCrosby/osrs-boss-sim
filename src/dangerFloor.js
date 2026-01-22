@@ -56,6 +56,11 @@ export function createDangerFloor(THREE, {
   mesh.frustumCulled = false;
   scene.add(mesh);
 
+  // Hide by default until the fight starts / system is activated
+  mesh.count = 0;
+  mesh.instanceMatrix.needsUpdate = true;
+
+
   const m4 = new THREE.Matrix4();
 
   // ----- internal state -----
