@@ -6,6 +6,8 @@ import { startTicker } from "./src/tick.js";
 import { createTargeting } from "./src/targeting.js";
 import { createDangerFloor } from "./src/dangerFloor.js";
 import { createBoss } from "./src/boss.js";
+import { createTornadoes } from "./src/tornadoes.js";
+
 
 
 
@@ -112,6 +114,40 @@ const dangerFloor = createDangerFloor(THREE, {
   },
 });
 
+// ===== Tornadoes =====
+const tornadoes = createTornadoes(THREE, {
+  scene,
+  gridW: GRID_W,
+  gridH: GRID_H,
+  getPlayerTile: () => ({ x: player.x, y: player.y }),
+  onPlayerDamaged: (amount) => {
+    playerHP -= amount;
+    console.log(`Tornado hit: -${amount} HP (now ${playerHP})`);
+
+    if (playerHP <= 0) {
+      console.log("Player died (HP <= 0). Resetting...");
+      reset();
+    }
+  },
+  config: {
+    firstSpawnTick: 60,
+    periodTicks: 54,
+    durationTicks: 21,
+    slamLeadTicks: 2,
+
+    baseCount: 2,
+    countGrowth: 1,
+
+    cornerRegionSize: 3,
+
+    speedTilesPerTick: 1,
+
+    damageMin: 5,
+    damageMax: 15,
+  },
+});
+
+
 // ===== Camera controller =====
 const cameraCtl = createOrbitCameraController(THREE, {
   canvas,
@@ -146,6 +182,10 @@ function startFightLoop() {
     // Danger floor: update + render once per fight tick
     dangerFloor.update(tick);
     dangerFloor.render();
+
+    // Tornadoes: update + render once per fight tick
+    tornadoes.update(tick);
+
     },
   });
 }
@@ -187,6 +227,8 @@ function startFight() {
   tick = 0;
 
   dangerFloor.reset();
+  tornadoes.reset();
+
   playerHP = 100;
 
   tickEl.textContent = "0";
@@ -210,6 +252,8 @@ function reset() {
   tick = 0;
   tickEl.textContent = "0";
   dangerFloor.reset();
+  tornadoes.reset();
+
   playerHP = 100;
 
   targeting.clear();
