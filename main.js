@@ -4,6 +4,8 @@ import { createPlayer } from "./src/player.js";
 import { createOrbitCameraController } from "./src/camera.js";
 import { startTicker } from "./src/tick.js";
 import { createTargeting } from "./src/targeting.js";
+import { createDangerFloor } from "./src/dangerFloor.js";
+
 
 console.log("THREE loaded", THREE.REVISION);
 
@@ -75,6 +77,32 @@ const targeting = createTargeting(THREE, {
   pickTileFromMouse: arena.pickTileFromMouse,
 });
 
+// ===== Danger Floor =====
+let playerHP = 100; // temporary plumbing (replace with your real HP later)
+
+const dangerFloor = createDangerFloor(THREE, {
+  scene,
+  gridW: GRID_W,
+  gridH: GRID_H,
+  getPlayerTile: () => ({ x: player.x, y: player.y }),
+  onPlayerDamaged: (amount) => {
+    playerHP -= amount;
+    console.log(`Danger floor hit: -${amount} HP (now ${playerHP})`);
+
+    if (playerHP <= 0) {
+      console.log("Player died (HP <= 0). Resetting...");
+      reset();
+    }
+  },
+  config: {
+    spawnDelayTicks: 12,
+    safeTicks: 6,
+    unsafeTicks: 14,
+    damageMin: 10,
+    damageMax: 20,
+  },
+});
+
 // ===== Camera controller =====
 const cameraCtl = createOrbitCameraController(THREE, {
   canvas,
@@ -95,16 +123,20 @@ function startFightLoop() {
   ticker = startTicker({
     tickMs: TICK_MS,
     onTick: () => {
-      if (state !== GameState.FIGHT) return;
+    if (state !== GameState.FIGHT) return;
 
-      tick++;
-      tickEl.textContent = String(tick);
+    tick++;
+    tickEl.textContent = String(tick);
 
-      player.stepToward(targeting.target, PLAYER_SPEED_TILES_PER_TICK, GRID_W, GRID_H);
+    player.stepToward(targeting.target, PLAYER_SPEED_TILES_PER_TICK, GRID_W, GRID_H);
 
-      if (targeting.target && player.x === targeting.target.x && player.y === targeting.target.y) {
-        targeting.clear();
-      }
+    if (targeting.target && player.x === targeting.target.x && player.y === targeting.target.y) {
+      targeting.clear();
+    }
+
+    // Danger floor: update + render once per fight tick
+    dangerFloor.update(tick);
+    dangerFloor.render();
     },
   });
 }
@@ -144,6 +176,10 @@ function startFight() {
   targeting.clear();
 
   tick = 0;
+
+  dangerFloor.reset();
+  playerHP = 100;
+
   tickEl.textContent = "0";
 
   player.setPos(5, 5);
@@ -164,6 +200,8 @@ function reset() {
 
   tick = 0;
   tickEl.textContent = "0";
+  dangerFloor.reset();
+  playerHP = 100;
 
   targeting.clear();
   player.setPos(5, 5);
