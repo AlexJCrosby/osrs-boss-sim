@@ -13,11 +13,25 @@ const GRID_H = 12;
 const TICK_MS = 600;
 const PLAYER_SPEED_TILES_PER_TICK = 2;
 
+const GameState = Object.freeze({
+  LOBBY: "LOBBY",
+  FIGHT: "FIGHT",
+});
+
+let state = GameState.LOBBY;
+let tickerId = null; // will hold setInterval id
+
 // ===== DOM / HUD =====
 const canvas = document.getElementById("game");
 const tickEl = document.getElementById("tick");
 const targetEl = document.getElementById("target");
+const statusEl = document.getElementById("status");
+const startBtn = document.getElementById("startBtn");
+
+statusEl.textContent = "Lobby"; // <-- moved here (after statusEl exists)
+
 document.getElementById("resetBtn").addEventListener("click", reset);
+startBtn.addEventListener("click", startFight);
 
 // Prevent right-click menu
 canvas.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -71,22 +85,35 @@ const cameraCtl = createOrbitCameraController(THREE, {
 // Register wheel ONCE (not per-frame)
 cameraCtl.attachZoomWheel();
 
-// ===== Tick loop =====
+// ===== Tick loop (movement) =====
 let tick = 0;
-const ticker = startTicker({
-  tickMs: TICK_MS,
-  onTick: () => {
-    tick++;
-    tickEl.textContent = String(tick);
+let ticker = null;
 
-    // movement tick
-    player.stepToward(targeting.target, PLAYER_SPEED_TILES_PER_TICK, GRID_W, GRID_H);
+function startFightLoop() {
+  if (ticker) return;
 
-    if (targeting.target && player.x === targeting.target.x && player.y === targeting.target.y) {
-      targeting.clear();
-    }
-  },
-});
+  ticker = startTicker({
+    tickMs: TICK_MS,
+    onTick: () => {
+      if (state !== GameState.FIGHT) return;
+
+      tick++;
+      tickEl.textContent = String(tick);
+
+      player.stepToward(targeting.target, PLAYER_SPEED_TILES_PER_TICK, GRID_W, GRID_H);
+
+      if (targeting.target && player.x === targeting.target.x && player.y === targeting.target.y) {
+        targeting.clear();
+      }
+    },
+  });
+}
+
+function stopFightLoop() {
+  if (!ticker) return;
+  ticker.stop();
+  ticker = null;
+}
 
 // ===== Resize + render loop =====
 function onResize() {
@@ -112,11 +139,34 @@ function animate(now) {
 }
 requestAnimationFrame(animate);
 
+// ===== Game State =====
+function startFight() {
+  targeting.clear();
+
+  tick = 0;
+  tickEl.textContent = "0";
+
+  player.setPos(5, 5);
+
+  state = GameState.FIGHT;
+  statusEl.textContent = "Fight";
+
+  startFightLoop();
+}
+
+
 // ===== Reset =====
 function reset() {
+  stopFightLoop();
+
+  state = GameState.LOBBY;
+  statusEl.textContent = "Lobby";
+
   tick = 0;
   tickEl.textContent = "0";
 
   targeting.clear();
   player.setPos(5, 5);
 }
+
+
