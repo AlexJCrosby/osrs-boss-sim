@@ -5,6 +5,8 @@ import { createOrbitCameraController } from "./src/camera.js";
 import { startTicker } from "./src/tick.js";
 import { createTargeting } from "./src/targeting.js";
 import { createDangerFloor } from "./src/dangerFloor.js";
+import { createBoss } from "./src/boss.js";
+
 
 
 console.log("THREE loaded", THREE.REVISION);
@@ -67,6 +69,13 @@ const player = createPlayer(THREE, {
   scene,
   startX: 5,
   startY: 5,
+});
+
+// ===== Boss =====
+const boss = createBoss(THREE, {
+  scene,
+  startX: 9,
+  startY: 9,
 });
 
 // ===== Targeting (target + ring + click-to-set) =====

@@ -55,7 +55,7 @@ export function createDangerFloor(THREE, {
   const mesh = new THREE.InstancedMesh(geo, mat, maxInstances);
   mesh.frustumCulled = false;
   scene.add(mesh);
-
+  mesh.renderOrder = 1;
   // Hide by default until the fight starts / system is activated
   mesh.count = 0;
   mesh.instanceMatrix.needsUpdate = true;

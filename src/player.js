@@ -6,6 +6,8 @@ export function createPlayer(THREE, { scene, startX, startY }) {
     new THREE.MeshBasicMaterial({ color: 0x00ff00 })
   );
   scene.add(mesh);
+  mesh.renderOrder = 3;
+
 
   function clamp(n, min, max) {
     return Math.max(min, Math.min(max, n));
