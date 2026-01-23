@@ -392,9 +392,6 @@ const targeting = createTargeting(THREE, {
   pickTileFromMouse: arena.pickTileFromMouse,
 });
 
-// (removed) let playerHP = 100;  // temporary plumbing
-// Use currentHP/maxHP instead (defined above)
-
 // ===== Danger Floor =====
 const dangerFloor = createDangerFloor(THREE, {
   scene,
