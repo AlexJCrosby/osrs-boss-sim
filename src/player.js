@@ -6,6 +6,26 @@ export function createPlayer(THREE, { scene, startX, startY }) {
   let renderX = player.x;
   let renderY = player.y;
 
+    // --- Tick-length movement animation (so it glides over the whole tick) ---
+    const TICK_SECONDS = 0.6; // matches your 600ms tick
+    let moveFromX = renderX, moveFromY = renderY;
+    let moveToX = renderX, moveToY = renderY;
+    let moveElapsed = TICK_SECONDS;
+
+    function beginMoveToCurrentLogical() {
+      // start from wherever we're currently drawn (prevents snapping)
+      moveFromX = renderX;
+      moveFromY = renderY;
+      moveToX = player.x;
+      moveToY = player.y;
+      moveElapsed = 0;
+    }
+
+    function smoothstep(t) {
+      // nice ease-in-out, 0..1
+      return t * t * (3 - 2 * t);
+    }
+
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(0.9, 0.9, 0.9),
     new THREE.MeshBasicMaterial({ color: 0x00ff00 })
@@ -34,6 +54,11 @@ export function createPlayer(THREE, { scene, startX, startY }) {
     renderX = player.x;
     renderY = player.y;
 
+    // also reset animation so we don't "glide" after a teleport/reset
+    moveFromX = moveToX = renderX;
+    moveFromY = moveToY = renderY;
+    moveElapsed = TICK_SECONDS;
+
     sync();
   }
 
@@ -56,21 +81,25 @@ export function createPlayer(THREE, { scene, startX, startY }) {
 
       steps--;
     }
+    // If we moved logically this tick, start a glide toward the new logical tile
+    beginMoveToCurrentLogical();
+
   }
 
-  // Call this every animation frame (not on tick)
   function updateVisual(dt) {
-    // Higher = snappier, lower = floatier
-    const SMOOTH = 14;
+    // progress the current "move over the tick"
+    moveElapsed = Math.min(TICK_SECONDS, moveElapsed + dt);
+    const t = moveElapsed / TICK_SECONDS;
 
-    // Frame-rate independent smoothing
-    const t = 1 - Math.exp(-SMOOTH * dt);
+    // choose easing: smoothstep(t) for ease-in-out, or just t for linear
+    const u = smoothstep(t);
 
-    renderX = lerp(renderX, player.x, t);
-    renderY = lerp(renderY, player.y, t);
+    renderX = lerp(moveFromX, moveToX, u);
+    renderY = lerp(moveFromY, moveToY, u);
 
     sync();
   }
+
 
   sync();
 
