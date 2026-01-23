@@ -34,6 +34,115 @@ const targetEl = document.getElementById("target");
 const statusEl = document.getElementById("status");
 const startBtn = document.getElementById("startBtn");
 
+// ===== Health UX controls (persisted) =====
+const hpLabel = document.createElement("span");
+hpLabel.className = "hint";
+hpLabel.textContent = "Start HP:";
+
+const hpInput = document.createElement("input");
+hpInput.type = "number";
+hpInput.min = "10";
+hpInput.max = "99";
+hpInput.step = "1";
+hpInput.style.width = "64px";
+
+const barLabel = document.createElement("label");
+barLabel.className = "hint";
+barLabel.style.display = "inline-flex";
+barLabel.style.alignItems = "center";
+barLabel.style.gap = "6px";
+
+const showBarToggle = document.createElement("input");
+showBarToggle.type = "checkbox";
+
+const barText = document.createElement("span");
+barText.textContent = "Show bar";
+
+barLabel.append(showBarToggle, barText);
+
+// Load persisted settings (or defaults)
+const storedStartHP = Number(localStorage.getItem("startHP") || "99");
+hpInput.value = String(Math.min(99, Math.max(10, storedStartHP)));
+
+const storedShowBar = localStorage.getItem("showHPBar");
+showBarToggle.checked = storedShowBar === null ? true : storedShowBar === "1";
+
+// Inject controls into the existing .hud (top bar)
+const hudEl = document.querySelector(".hud");
+hudEl.insertBefore(hpLabel, startBtn);
+hudEl.insertBefore(hpInput, startBtn);
+hudEl.insertBefore(barLabel, startBtn);
+
+hpInput.addEventListener("change", () => {
+  const v = Math.min(99, Math.max(10, Number(hpInput.value || 99)));
+  hpInput.value = String(v);
+  localStorage.setItem("startHP", String(v));
+});
+
+showBarToggle.addEventListener("change", () => {
+  localStorage.setItem("showHPBar", showBarToggle.checked ? "1" : "0");
+  updateHealthUI(); // will be defined below
+});
+
+// ===== Health UI (orb + optional bar) =====
+const healthHud = document.createElement("div");
+healthHud.className = "healthHud";
+
+const hpOrb = document.createElement("div");
+hpOrb.className = "hpOrb";
+
+const hpOrbValue = document.createElement("div");
+hpOrbValue.className = "hpOrbValue";
+hpOrb.appendChild(hpOrbValue);
+
+const hpBar = document.createElement("div");
+hpBar.className = "hpBar";
+
+const hpBarFill = document.createElement("div");
+hpBarFill.className = "hpBarFill";
+hpBar.appendChild(hpBarFill);
+
+healthHud.append(hpBar, hpOrb);
+document.body.appendChild(healthHud);
+
+// Real HP state (replaces playerHP)
+let maxHP = Number(hpInput.value);
+let currentHP = maxHP;
+
+function updateHealthUI() {
+  maxHP = Math.min(99, Math.max(10, Number(maxHP || 99)));
+  currentHP = Math.min(maxHP, Math.max(0, Number(currentHP || 0)));
+
+  const pct = maxHP <= 0 ? 0 : (currentHP / maxHP);
+  const deg = Math.max(0, Math.min(360, pct * 360));
+
+  // Orb: red portion shrinks as HP drops (visual emptying)
+  // Remaining is dark/grey.
+  hpOrb.style.background = `conic-gradient(#b40000 0deg ${deg}deg, rgba(20,20,20,0.85) ${deg}deg 360deg)`;
+  hpOrbValue.textContent = String(currentHP);
+
+  // Bar: scale down from bottom
+  hpBarFill.style.transform = `scaleY(${pct})`;
+
+  // Toggle bar visibility (future UX feature; already wired)
+  hpBar.style.display = showBarToggle.checked ? "block" : "none";
+}
+updateHealthUI();
+
+function applyDamage(amount, sourceLabel) {
+  currentHP -= amount;
+  if (currentHP < 0) currentHP = 0;
+
+  console.log(`${sourceLabel} hit: -${amount} HP (now ${currentHP}/${maxHP})`);
+  updateHealthUI();
+
+  if (currentHP <= 0) {
+    console.log("Player died (HP <= 0). Resetting...");
+    reset();
+  }
+}
+
+
 statusEl.textContent = "Lobby"; // <-- moved here (after statusEl exists)
 
 document.getElementById("resetBtn").addEventListener("click", reset);
@@ -88,23 +197,19 @@ const targeting = createTargeting(THREE, {
   pickTileFromMouse: arena.pickTileFromMouse,
 });
 
-// ===== Danger Floor =====
-let playerHP = 100; // temporary plumbing (replace with your real HP later)
+// (removed) let playerHP = 100;  // temporary plumbing
+// Use currentHP/maxHP instead (defined above)
 
+// ===== Danger Floor =====
 const dangerFloor = createDangerFloor(THREE, {
   scene,
   gridW: GRID_W,
   gridH: GRID_H,
   getPlayerTile: () => ({ x: player.x, y: player.y }),
   onPlayerDamaged: (amount) => {
-    playerHP -= amount;
-    console.log(`Danger floor hit: -${amount} HP (now ${playerHP})`);
-
-    if (playerHP <= 0) {
-      console.log("Player died (HP <= 0). Resetting...");
-      reset();
-    }
+  applyDamage(amount, "Danger floor");
   },
+
   config: {
     spawnDelayTicks: 12,
     safeTicks: 6,
@@ -121,14 +226,9 @@ const tornadoes = createTornadoes(THREE, {
   gridH: GRID_H,
   getPlayerTile: () => ({ x: player.x, y: player.y }),
   onPlayerDamaged: (amount) => {
-    playerHP -= amount;
-    console.log(`Tornado hit: -${amount} HP (now ${playerHP})`);
-
-    if (playerHP <= 0) {
-      console.log("Player died (HP <= 0). Resetting...");
-      reset();
-    }
+  applyDamage(amount, "Tornado");
   },
+
   config: {
     firstSpawnTick: 60,
     periodTicks: 54,
@@ -231,7 +331,10 @@ function startFight() {
   dangerFloor.reset();
   tornadoes.reset();
 
-  playerHP = 100;
+  maxHP = Math.min(99, Math.max(10, Number(hpInput.value || 99)));
+  currentHP = maxHP;
+  updateHealthUI();
+
 
   tickEl.textContent = "0";
 
@@ -256,7 +359,11 @@ function reset() {
   dangerFloor.reset();
   tornadoes.reset();
 
-  playerHP = 100;
+  // On reset, go back to full HP of the chosen start value
+  maxHP = Math.min(99, Math.max(10, Number(hpInput.value || 99)));
+  currentHP = maxHP;
+  updateHealthUI();
+
 
   targeting.clear();
   player.setPos(5, 5);

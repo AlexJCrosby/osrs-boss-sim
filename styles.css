@@ -1,5 +1,6 @@
 :root {
   --hudH: 48px; /* adjust if your header is taller */
+  color-scheme: dark light;
 }
 
 * { box-sizing: border-box; }
@@ -42,4 +43,73 @@ canvas#game {
   width: 100vw;
   height: calc(100vh - var(--hudH));
   display: block;
+}
+
+/* ===== Health UI (orb + bar) ===== */
+.healthHud {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  user-select: none;
+  pointer-events: none; /* UI is display-only (controls are in top HUD) */
+}
+
+/* Orb wrapper */
+.hpOrb {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  position: relative;
+
+  /* Filled via JS using conic-gradient */
+  background: conic-gradient(#b40000 0deg, #b40000 360deg);
+
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  border: 2px solid rgba(0,0,0,0.55);
+}
+
+/* Inner “glass” to make it look orb-y */
+.hpOrb::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.22), rgba(0,0,0,0.55));
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Number in the orb */
+.hpOrbValue {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 18px;
+  color: #ffd55a; /* OSRS-ish yellow */
+  text-shadow: 0 2px 0 rgba(0,0,0,0.9);
+  z-index: 2;
+}
+
+/* Vertical bar */
+.hpBar {
+  width: 18px;
+  height: 120px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.10);
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}
+
+.hpBarFill {
+  width: 100%;
+  height: 100%;
+  transform-origin: bottom;
+  transform: scaleY(1);
+  background: linear-gradient(to top, #7f0000, #ff2b2b);
 }
