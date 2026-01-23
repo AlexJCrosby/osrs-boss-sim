@@ -152,7 +152,7 @@ const tornadoes = createTornadoes(THREE, {
 const cameraCtl = createOrbitCameraController(THREE, {
   canvas,
   camera,
-  getFocus: () => ({ x: player.x, y: player.y }),
+  getFocus: () => ({ x: player.renderX, y: player.renderY }),
 });
 
 // Register wheel ONCE (not per-frame)
@@ -213,6 +213,7 @@ function animate(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
 
+  player.updateVisual(dt);
   cameraCtl.update(dt);
   renderer.render(scene, camera);
 
