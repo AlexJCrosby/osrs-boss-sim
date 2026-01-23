@@ -21,10 +21,6 @@ export function createPlayer(THREE, { scene, startX, startY }) {
       moveElapsed = 0;
     }
 
-    function smoothstep(t) {
-      // nice ease-in-out, 0..1
-      return t * t * (3 - 2 * t);
-    }
 
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(0.9, 0.9, 0.9),
@@ -92,7 +88,8 @@ export function createPlayer(THREE, { scene, startX, startY }) {
     const t = moveElapsed / TICK_SECONDS;
 
     // choose easing: smoothstep(t) for ease-in-out, or just t for linear
-    const u = smoothstep(t);
+    const u = t; // linear
+
 
     renderX = lerp(moveFromX, moveToX, u);
     renderY = lerp(moveFromY, moveToY, u);
