@@ -2,7 +2,7 @@ import * as THREE from "./vendor/three.module.min.js";
 import { createArena } from "./src/arena.js";
 import { createPlayer } from "./src/player.js";
 import { createOrbitCameraController } from "./src/camera.js";
-import { startTicker } from "./src/tick.js";
+import { createTicker } from "./src/tick.js";
 import { createTargeting } from "./src/targeting.js";
 import { createDangerFloor } from "./src/dangerFloor.js";
 import { createBoss } from "./src/boss.js";
@@ -128,6 +128,43 @@ const SPLAT_RED_BG = splatSvgDataUri("#b40000", "#3b0000");
 // Optional for later (splash/0):
 const SPLAT_BLUE_BG = splatSvgDataUri("#1a52d6", "#0b1b4a");
 
+// ===== Slow-mo speed control (persisted) =====
+const speedLabel = document.createElement("span");
+speedLabel.className = "hint";
+speedLabel.textContent = "Speed:";
+
+const speedValue = document.createElement("span");
+speedValue.className = "hint";
+speedValue.style.minWidth = "52px";
+
+const speedSlider = document.createElement("input");
+speedSlider.type = "range";
+speedSlider.min = "25";
+speedSlider.max = "100";
+speedSlider.step = "5";
+speedSlider.style.width = "140px";
+
+const speedInput = document.createElement("input");
+speedInput.type = "number";
+speedInput.min = "25";
+speedInput.max = "100";
+speedInput.step = "5";
+speedInput.style.width = "64px";
+
+// Load persisted
+const storedSpeed = Number(localStorage.getItem("simSpeedPct") || "100");
+const startSpeed = Math.min(100, Math.max(25, storedSpeed));
+speedSlider.value = String(startSpeed);
+speedInput.value = String(startSpeed);
+speedValue.textContent = `${startSpeed}%`;
+
+// Insert into HUD before Start button
+hudEl.insertBefore(speedLabel, startBtn);
+hudEl.insertBefore(speedSlider, startBtn);
+hudEl.insertBefore(speedInput, startBtn);
+hudEl.insertBefore(speedValue, startBtn);
+
+
 function worldToScreen(x, y, z, camera, canvas) {
   const v = new THREE.Vector3(x, y, z);
   v.project(camera);
@@ -197,6 +234,25 @@ function updateHitSplats(dt) {
   }
 }
 
+// ===== Speed control =====
+function applySpeedPercent(pct) {
+  const p = Math.min(100, Math.max(25, Number(pct) || 100));
+
+  speedSlider.value = String(p);
+  speedInput.value = String(p);
+  speedValue.textContent = `${p}%`;
+  localStorage.setItem("simSpeedPct", String(p));
+
+  // 600ms base tick at 100%
+  const tickMs = 600 / (p / 100);
+  const tickSec = tickMs / 1000;
+
+  // Update tick engine + visual glides
+  ticker.setSpeedPercent(p);
+  player.setTickSeconds(tickSec);
+  tornadoes.setTickSeconds(tickSec);
+}
+
 
 // Real HP state (replaces playerHP)
 let maxHP = Number(hpInput.value);
@@ -229,7 +285,6 @@ function applyDamage(amount, sourceLabel) {
   // Accumulate for a single hit splat at end of tick
   // (Works even if multiple tornadoes hit in same tick.)
   pendingDamageThisTick += amount;
-  pendingTickIndex = tick;
 
   console.log(`${sourceLabel} hit: -${amount} HP (now ${currentHP}/${maxHP})`);
   updateHealthUI();
@@ -241,6 +296,9 @@ function applyDamage(amount, sourceLabel) {
 }
 
 statusEl.textContent = "Lobby"; // <-- moved here (after statusEl exists)
+
+speedSlider.addEventListener("input", () => applySpeedPercent(speedSlider.value));
+speedInput.addEventListener("change", () => applySpeedPercent(speedInput.value));
 
 document.getElementById("resetBtn").addEventListener("click", reset);
 startBtn.addEventListener("click", startFight);
@@ -357,19 +415,16 @@ cameraCtl.attachZoomWheel();
 
 // ===== Tick loop (movement) =====
 let tick = 0;
-let ticker = null;
 
-// ===== Tick damage aggregation (MVP: one splat per tick) =====
+// ===== Tick damage aggregation (hit splats) =====
 let pendingDamageThisTick = 0;
-let pendingTickIndex = 0;
 
 
-function startFightLoop() {
-  if (ticker) return;
 
-  ticker = startTicker({
-    tickMs: TICK_MS,
-    onTick: () => {
+// Create ONE ticker instance for the whole app
+const ticker = createTicker({
+  baseTickMs: TICK_MS,
+  onTick: () => {
     if (state !== GameState.FIGHT) return;
 
     tick++;
@@ -385,23 +440,26 @@ function startFightLoop() {
     dangerFloor.update(tick);
     dangerFloor.render();
 
-    // Tornadoes: update + render once per fight tick
+    // Tornadoes: update once per fight tick
     tornadoes.update(tick);
 
-    // ===== End-of-tick damage feedback =====
-    if (pendingDamageThisTick > 0 && pendingTickIndex === tick) {
+    if (pendingDamageThisTick > 0) {
       spawnHitSplat({ value: pendingDamageThisTick, kind: "damage" });
       pendingDamageThisTick = 0;
-      }
-    },
-  });
+    }
+
+  },
+});
+
+function startFightLoop() {
+  ticker.start();
 }
 
+
 function stopFightLoop() {
-  if (!ticker) return;
   ticker.stop();
-  ticker = null;
 }
+
 
 // ===== Resize + render loop =====
 function onResize() {

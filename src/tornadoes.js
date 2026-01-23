@@ -25,7 +25,10 @@ export function createTornadoes(THREE, {
     speedTilesPerTick = 1,  // one tile per tick (keep this)
 
     // Visual smoothing
-    tickSeconds = 0.6,      // must match your tick length (600ms)
+    tickSeconds: initialTickSeconds = 0.6,
+
+    
+
     y = 0.28,               // above floor, below player
 
     // Damage
@@ -37,6 +40,18 @@ export function createTornadoes(THREE, {
     color = 0x99ccff,
     renderOrder = 3,        // above danger floor; tweak if you want
   } = config;
+
+  let tickSeconds = initialTickSeconds;
+
+  function setTickSeconds(sec) {
+    tickSeconds = Math.max(0.05, Number(sec) || 0.6);
+
+    // Clamp any in-flight animations so they don't jump
+    for (const t of tornadoes) {
+      t.moveElapsed = Math.min(t.moveElapsed, tickSeconds);
+    }
+  }
+
 
   // ---- helpers ----
   function randInt(min, max) {
@@ -325,6 +340,7 @@ export function createTornadoes(THREE, {
   return {
     reset,
     updateVisual,
+    setTickSeconds,
     update(fightTick) {
       ensureWave(fightTick);
 

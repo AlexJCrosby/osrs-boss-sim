@@ -7,10 +7,10 @@ export function createPlayer(THREE, { scene, startX, startY }) {
   let renderY = player.y;
 
     // --- Tick-length movement animation (so it glides over the whole tick) ---
-    const TICK_SECONDS = 0.6; // matches your 600ms tick
+    let tickSeconds = 0.6; // matches your 600ms tick
     let moveFromX = renderX, moveFromY = renderY;
     let moveToX = renderX, moveToY = renderY;
-    let moveElapsed = TICK_SECONDS;
+    let moveElapsed = tickSeconds;
 
     function beginMoveToCurrentLogical() {
       // start from wherever we're currently drawn (prevents snapping)
@@ -19,6 +19,14 @@ export function createPlayer(THREE, { scene, startX, startY }) {
       moveToX = player.x;
       moveToY = player.y;
       moveElapsed = 0;
+    }
+
+    function setTickSeconds(sec) {
+      const s = Math.max(0.05, Number(sec) || 0.6);
+      tickSeconds = s;
+
+      // Keep animation state sane
+      moveElapsed = Math.min(moveElapsed, tickSeconds);
     }
 
 
@@ -53,7 +61,7 @@ export function createPlayer(THREE, { scene, startX, startY }) {
     // also reset animation so we don't "glide" after a teleport/reset
     moveFromX = moveToX = renderX;
     moveFromY = moveToY = renderY;
-    moveElapsed = TICK_SECONDS;
+    moveElapsed = tickSeconds;
 
     sync();
   }
@@ -84,8 +92,8 @@ export function createPlayer(THREE, { scene, startX, startY }) {
 
   function updateVisual(dt) {
     // progress the current "move over the tick"
-    moveElapsed = Math.min(TICK_SECONDS, moveElapsed + dt);
-    const t = moveElapsed / TICK_SECONDS;
+    moveElapsed = Math.min(tickSeconds, moveElapsed + dt);
+    const t = moveElapsed / tickSeconds;
 
     // choose easing: smoothstep(t) for ease-in-out, or just t for linear
     const u = t; // linear
@@ -101,12 +109,14 @@ export function createPlayer(THREE, { scene, startX, startY }) {
   sync();
 
   return {
+    
     get x() { return player.x; },
     get y() { return player.y; },
 
     get renderX() { return renderX; },
     get renderY() { return renderY; },
 
+    setTickSeconds,
     setPos,
     stepToward,
     updateVisual,
