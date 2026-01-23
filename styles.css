@@ -113,3 +113,39 @@ canvas#game {
   transform: scaleY(1);
   background: linear-gradient(to top, #7f0000, #ff2b2b);
 }
+
+/* ===== Hit splats (damage feedback) ===== */
+.hitSplatLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.hitSplat {
+  position: absolute;
+  width: 58px;
+  height: 46px;
+  transform: translate(-50%, -100%);
+  will-change: transform, opacity, left, top;
+  filter: drop-shadow(0 3px 2px rgba(0,0,0,0.55));
+}
+
+.hitSplat .splatBg {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+}
+
+.hitSplat .splatVal {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 18px;
+  color: #ffffff;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.9);
+}
