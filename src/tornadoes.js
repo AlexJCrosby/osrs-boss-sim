@@ -100,8 +100,6 @@ export function createTornadoes(THREE, {
       return { x, y };
   }
 
-
-
   // ---- visuals ----
   const material = new THREE.MeshStandardMaterial({
     color,
