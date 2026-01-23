@@ -214,6 +214,7 @@ function animate(now) {
   last = now;
 
   player.updateVisual(dt);
+  tornadoes.updateVisual(dt);
   cameraCtl.update(dt);
   renderer.render(scene, camera);
 
