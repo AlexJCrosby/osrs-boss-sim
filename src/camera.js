@@ -16,6 +16,16 @@ export function createOrbitCameraController(THREE, { canvas, camera, getFocus })
     return Math.max(min, Math.min(max, n));
   }
 
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  // --- Smoothed camera focus (prevents snapping when logical tile updates) ---
+  let smoothFx = null;
+  let smoothFz = null;
+  const FOCUS_Y = 0.45;   // keep constant (matches your old focus.y)
+  const FOCUS_SMOOTH = 2; // lower = floatier, higher = tighter
+
   // Alt + RMB drag
   let dragging = false;
   let lastX = 0, lastY = 0;
@@ -43,11 +53,15 @@ export function createOrbitCameraController(THREE, { canvas, camera, getFocus })
   });
 
   function attachZoomWheel() {
-    canvas.addEventListener("wheel", (e) => {
-      orbitRadius += Math.sign(e.deltaY) * 0.5;
-      orbitRadius = clamp(orbitRadius, 6, 15);
-      e.preventDefault();
-    }, { passive: false });
+    canvas.addEventListener(
+      "wheel",
+      (e) => {
+        orbitRadius += Math.sign(e.deltaY) * 0.5;
+        orbitRadius = clamp(orbitRadius, 6, 15);
+        e.preventDefault();
+      },
+      { passive: false }
+    );
   }
 
   function update(dt) {
@@ -57,8 +71,23 @@ export function createOrbitCameraController(THREE, { canvas, camera, getFocus })
     if (keys.has("w")) orbitPitch += PITCH_SPEED * dt;
     orbitPitch = clamp(orbitPitch, MIN_PITCH, MAX_PITCH);
 
+    // Raw focus (player's smooth render position should be coming from getFocus())
     const f = getFocus();
-    const focus = new THREE.Vector3(f.x + 0.5, 0.45, f.y + 0.5);
+    const rawFx = f.x + 0.5;
+    const rawFz = f.y + 0.5;
+
+    // Initialize smoothing on first frame
+    if (smoothFx === null || smoothFz === null) {
+      smoothFx = rawFx;
+      smoothFz = rawFz;
+    }
+
+    // Frame-rate independent smoothing
+    const t = 1 - Math.exp(-FOCUS_SMOOTH * dt);
+    smoothFx = lerp(smoothFx, rawFx, t);
+    smoothFz = lerp(smoothFz, rawFz, t);
+
+    const focus = new THREE.Vector3(smoothFx, FOCUS_Y, smoothFz);
 
     const x = focus.x + orbitRadius * Math.sin(orbitYaw) * Math.cos(orbitPitch);
     const z = focus.z + orbitRadius * Math.cos(orbitYaw) * Math.cos(orbitPitch);
