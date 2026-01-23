@@ -12,9 +12,10 @@ export function createArena(THREE, { scene, canvas, camera, gridW, gridH }) {
   grid.position.set(gridW / 2, 0.001, gridH / 2);
   scene.add(grid);
 
-  // invisible picking plane
+  // invisible picking plane (bigger than arena so off-grid clicks still register)
+  const PICK_SCALE = 50; // big enough to cover the viewport comfortably
   const pickPlane = new THREE.Mesh(
-    new THREE.PlaneGeometry(gridW, gridH),
+    new THREE.PlaneGeometry(gridW * PICK_SCALE, gridH * PICK_SCALE),
     new THREE.MeshBasicMaterial({ visible: false })
   );
   pickPlane.rotation.x = -Math.PI / 2;
@@ -34,12 +35,18 @@ export function createArena(THREE, { scene, canvas, camera, gridW, gridH }) {
     const hits = raycaster.intersectObject(pickPlane, false);
     if (!hits.length) return null;
 
-    const p = hits[0].point;
-    const tx = Math.floor(p.x);
-    const ty = Math.floor(p.z);
+        const p = hits[0].point;
 
-    if (tx < 0 || tx >= gridW || ty < 0 || ty >= gridH) return null;
+    // Convert world position to tile indices
+    let tx = Math.floor(p.x);
+    let ty = Math.floor(p.z);
+
+    // Snap to nearest valid tile inside the 12x12
+    tx = Math.max(0, Math.min(gridW - 1, tx));
+    ty = Math.max(0, Math.min(gridH - 1, ty));
+
     return { x: tx, y: ty };
+
   }
 
   return { pickTileFromMouse };
