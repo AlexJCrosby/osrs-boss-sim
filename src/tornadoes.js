@@ -88,12 +88,19 @@ export function createTornadoes(THREE, {
     };
   }
 
-  function greedyStepToward(x, y, tx, ty) {
-    // Move 1 tile toward target: prefer x movement first, then y (simple and deterministic)
-    if (x !== tx) x += sign(tx - x);
-    else if (y !== ty) y += sign(ty - y);
-    return { x, y };
+    function greedyStepToward(x, y, tx, ty) {
+      // Move 1 tile toward target (OSRS-style): allow diagonal movement in a single step
+      // i.e., a step can change both x and y by 1.
+      const dx = tx - x;
+      const dy = ty - y;
+
+      x += sign(dx); // -1, 0, or 1
+      y += sign(dy); // -1, 0, or 1
+
+      return { x, y };
   }
+
+
 
   // ---- visuals ----
   const material = new THREE.MeshStandardMaterial({
