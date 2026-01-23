@@ -23,22 +23,29 @@ export function createPlayer(THREE, { scene, startX, startY }) {
     sync();
   }
 
-  function stepToward(target, speed, gridW, gridH) {
+    function stepToward(target, speed, gridW, gridH) {
     if (!target) return;
 
     let steps = speed;
+
     while (steps > 0 && (player.x !== target.x || player.y !== target.y)) {
-      if (player.x !== target.x) player.x += Math.sign(target.x - player.x);
-      else if (player.y !== target.y) player.y += Math.sign(target.y - player.y);
+      const dx = target.x - player.x;
+      const dy = target.y - player.y;
+
+      // OSRS-style step: can move diagonally (x and y in the same step)
+      player.x += Math.sign(dx); // -1, 0, or 1
+      player.y += Math.sign(dy); // -1, 0, or 1
+
+      // keep inside arena
+      player.x = clamp(player.x, 0, gridW - 1);
+      player.y = clamp(player.y, 0, gridH - 1);
+
       steps--;
     }
 
-    player.x = clamp(player.x, 0, gridW - 1);
-    player.y = clamp(player.y, 0, gridH - 1);
     sync();
   }
 
-  sync();
 
   return {
     get x() { return player.x; },
