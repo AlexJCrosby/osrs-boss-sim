@@ -128,6 +128,32 @@ const SPLAT_RED_BG = splatSvgDataUri("#b40000", "#3b0000");
 // Optional for later (splash/0):
 const SPLAT_BLUE_BG = splatSvgDataUri("#1a52d6", "#0b1b4a");
 
+// ===== God mode (training mode) =====
+const godLabel = document.createElement("label");
+godLabel.className = "hint";
+godLabel.style.display = "inline-flex";
+godLabel.style.alignItems = "center";
+godLabel.style.gap = "6px";
+
+const godToggle = document.createElement("input");
+godToggle.type = "checkbox";
+
+const godText = document.createElement("span");
+godText.textContent = "God mode";
+
+godLabel.append(godToggle, godText);
+
+// Load persisted value
+const storedGodMode = localStorage.getItem("godMode");
+godToggle.checked = storedGodMode === "1";
+
+// Inject into HUD before Start button
+hudEl.insertBefore(godLabel, startBtn);
+
+godToggle.addEventListener("change", () => {
+  localStorage.setItem("godMode", godToggle.checked ? "1" : "0");
+});
+
 // ===== Slow-mo speed control (persisted) =====
 const speedLabel = document.createElement("span");
 speedLabel.className = "hint";
@@ -257,6 +283,13 @@ function applySpeedPercent(pct) {
 // Real HP state (replaces playerHP)
 let maxHP = Number(hpInput.value);
 let currentHP = maxHP;
+let godMode = godToggle.checked;
+
+godToggle.addEventListener("change", () => {
+  godMode = godToggle.checked;
+  localStorage.setItem("godMode", godMode ? "1" : "0");
+});
+
 
 function updateHealthUI() {
   maxHP = Math.min(99, Math.max(10, Number(maxHP || 99)));
@@ -290,8 +323,15 @@ function applyDamage(amount, sourceLabel) {
   updateHealthUI();
 
   if (currentHP <= 0) {
-    console.log("Player died (HP <= 0). Resetting...");
-    reset();
+    if (godMode) {
+      console.log("God mode: lethal damage prevented, refilling HP");
+      currentHP = maxHP;
+      updateHealthUI();
+      // IMPORTANT: do NOT reset, do NOT return early
+    } else {
+      console.log("Player died (HP <= 0). Resetting...");
+      reset();
+    }
   }
 }
 
