@@ -652,6 +652,7 @@ function animate(now) {
   cameraCtl.update(dt);
   updateHitSplats(dt);
 
+
   renderer.render(scene, camera);
   
   requestAnimationFrame(animate);
@@ -706,7 +707,6 @@ function reset() {
   pendingDamageThisTick = 0;
   hitSplatLayer.innerHTML = "";
   hitSplats.length = 0;
-
 
   targeting.clear();
   player.setPos(5, 5);

@@ -100,6 +100,7 @@ export function createPlayer(THREE, { scene, startX, startY }) {
     moveElapsed = tickSeconds;
 
     sync();
+    syncTileIndicator();
   }
 
   // OSRS-style stepping: a "step" can be diagonal (x and y can change together).
