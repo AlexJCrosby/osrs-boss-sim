@@ -1,4 +1,5 @@
-// src/tornadoes.js
+import { createTileIndicator } from "./tileIndicator.js";
+
 export function createTornadoes(THREE, {
   scene,
   gridW,
@@ -156,6 +157,50 @@ export function createTornadoes(THREE, {
   // { x, y, mesh, renderX, renderY, moveFromX, moveFromY, moveToX, moveToY, moveElapsed }
   let tornadoes = [];
 
+  // ===== Tornadoes tile indicator (owned by tornadoes) =====
+  let tileIndicator = null;
+
+  function getTornadoTiles() {
+    // Only show tiles for currently active tornadoes
+    if (!active || !tornadoes.length) return [];
+    return tornadoes.map(t => ({ x: t.x, y: t.y }));
+  }
+
+  function createTornadoesTileIndicator(config = {}) {
+    if (tileIndicator) return tileIndicator;
+
+    tileIndicator = createTileIndicator(THREE, {
+      scene,
+      getTiles: getTornadoTiles,
+      config: {
+        // Allow multiple tiles. Pick a cap that’s safely above your max tornado count.
+        maxTiles: 64,
+        ...config,
+      },
+    });
+
+    return tileIndicator;
+  }
+
+  function syncTornadoesTileIndicator() {
+    if (!tileIndicator) return;
+    tileIndicator.sync();
+  }
+
+  function setTornadoesTileIndicatorStyle({ enabled, color, opacity255 } = {}) {
+    if (!tileIndicator) return;
+    if (enabled !== undefined) tileIndicator.setEnabled(enabled);
+    if (color !== undefined) tileIndicator.setColor(color);
+    if (opacity255 !== undefined) tileIndicator.setOpacity255(opacity255);
+  }
+
+  function disposeTornadoesTileIndicator() {
+    if (!tileIndicator) return;
+    tileIndicator.dispose();
+    tileIndicator = null;
+  }
+
+
   function currentWaveIndex(fightTick) {
     if (fightTick < firstSpawnTick) return -1;
     return Math.floor((fightTick - firstSpawnTick) / periodTicks);
@@ -294,6 +339,7 @@ export function createTornadoes(THREE, {
         const dmg = randInt(damageMin, damageMax);
         onPlayerDamaged(dmg);
       }
+      syncTornadoesTileIndicator();
     }
   }
 
@@ -335,20 +381,27 @@ export function createTornadoes(THREE, {
     active = false;
     waveStartTick = null;
     waveIndex = -1;
+    syncTornadoesTileIndicator();
   }
 
   return {
     reset,
     updateVisual,
     setTickSeconds,
+    createTornadoesTileIndicator,
+    syncTornadoesTileIndicator,
+    setTornadoesTileIndicatorStyle,
+    disposeTornadoesTileIndicator,
     update(fightTick) {
       ensureWave(fightTick);
+      syncTornadoesTileIndicator();
 
       if (active) {
         updateTornadoChase();
       }
 
       despawnIfNeeded(fightTick);
+      syncTornadoesTileIndicator();
     },
   };
 }

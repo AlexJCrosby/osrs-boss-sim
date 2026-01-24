@@ -189,6 +189,23 @@ hudEl.insertBefore(speedSlider, startBtn);
 hudEl.insertBefore(speedInput, startBtn);
 hudEl.insertBefore(speedValue, startBtn);
 
+// ===== HUD helpers =====
+function clamp255(v) {
+  v = Number(v);
+  if (!Number.isFinite(v)) return 255;
+  return Math.max(0, Math.min(255, Math.floor(v)));
+}
+
+function normalizeHex(s) {
+  s = String(s || "").trim();
+  if (!s.startsWith("#")) s = "#" + s;
+  if (s.length === 4) {
+    s = "#" + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
+  }
+  return s.toUpperCase();
+}
+
+
 // ===== Player Tile Indicator UI =====
 const ptiLabel = document.createElement("label");
 ptiLabel.className = "hint";
@@ -238,23 +255,104 @@ hudEl.insertBefore(ptiHex, startBtn);
 hudEl.insertBefore(ptiOpacity, startBtn);
 hudEl.insertBefore(ptiOpacityNum, startBtn);
 
-// Wire events
-function clamp255(v) {
-  v = Number(v);
-  if (!Number.isFinite(v)) return 255;
-  return Math.max(0, Math.min(255, Math.floor(v)));
+
+
+// !!! ===== Tornado Tile Indicator UI ===== !!! 
+const ttiLabel = document.createElement("label");
+ttiLabel.className = "hint";
+ttiLabel.style.display = "inline-flex";
+ttiLabel.style.alignItems = "center";
+ttiLabel.style.gap = "6px";
+
+const ttiToggle = document.createElement("input");
+ttiToggle.type = "checkbox";
+ttiToggle.checked = (localStorage.getItem("ttiEnabled") ?? "1") === "1";
+
+const ttiToggleText = document.createElement("span");
+ttiToggleText.textContent = "Tornado tiles";
+
+ttiLabel.append(ttiToggle, ttiToggleText);
+
+// Color inputs (swatch + hex)
+const ttiColor = document.createElement("input");
+ttiColor.type = "color";
+ttiColor.value = localStorage.getItem("ttiColor") || "#00FF66";
+
+const ttiHex = document.createElement("input");
+ttiHex.type = "text";
+ttiHex.value = ttiColor.value.toUpperCase();
+ttiHex.style.width = "90px";
+ttiHex.placeholder = "#RRGGBB";
+
+// Opacity (0..255)
+const ttiOpacity = document.createElement("input");
+ttiOpacity.type = "range";
+ttiOpacity.min = "0";
+ttiOpacity.max = "255";
+ttiOpacity.value = String(Number(localStorage.getItem("ttiOpacity255") || "160"));
+
+const ttiOpacityNum = document.createElement("input");
+ttiOpacityNum.type = "number";
+ttiOpacityNum.min = "0";
+ttiOpacityNum.max = "255";
+ttiOpacityNum.step = "1";
+ttiOpacityNum.value = ttiOpacity.value;
+ttiOpacityNum.style.width = "64px";
+
+// Add to HUD near the other indicator controls
+hudEl.insertBefore(ttiLabel, startBtn);
+hudEl.insertBefore(ttiColor, startBtn);
+hudEl.insertBefore(ttiHex, startBtn);
+hudEl.insertBefore(ttiOpacity, startBtn);
+hudEl.insertBefore(ttiOpacityNum, startBtn);
+
+
+function applyTTIUIToWorld() {
+  const enabled = ttiToggle.checked;
+  const hex = normalizeHex(ttiHex.value);
+  const op = clamp255(ttiOpacityNum.value);
+
+  // persist
+  localStorage.setItem("ttiEnabled", enabled ? "1" : "0");
+  localStorage.setItem("ttiColor", hex);
+  localStorage.setItem("ttiOpacity255", String(op));
+
+  // apply to tornadoes-owned indicator
+  tornadoes.setTornadoesTileIndicatorStyle({
+    enabled,
+    color: hex,
+    opacity255: op,
+  });
+
+  // Optional: force a sync immediately (usually tornadoes update does it each tick anyway)
+  tornadoes.syncTornadoesTileIndicator();
 }
 
-function normalizeHex(s) {
-  s = String(s || "").trim();
-  if (!s.startsWith("#")) s = "#" + s;
-  if (s.length === 4) {
-    // #RGB -> #RRGGBB
-    s = "#" + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
-  }
-  return s.toUpperCase();
-}
+ttiToggle.addEventListener("change", applyTTIUIToWorld);
 
+ttiColor.addEventListener("input", () => {
+  ttiHex.value = ttiColor.value.toUpperCase();
+  applyTTIUIToWorld();
+});
+
+ttiHex.addEventListener("change", () => {
+  const hex = normalizeHex(ttiHex.value);
+  ttiHex.value = hex;
+  ttiColor.value = hex;
+  applyTTIUIToWorld();
+});
+
+ttiOpacity.addEventListener("input", () => {
+  ttiOpacityNum.value = ttiOpacity.value;
+  applyTTIUIToWorld();
+});
+
+ttiOpacityNum.addEventListener("change", () => {
+  const op = clamp255(ttiOpacityNum.value);
+  ttiOpacityNum.value = String(op);
+  ttiOpacity.value = String(op);
+  applyTTIUIToWorld();
+});
 
 
 // ===== Utility: world to screen coords =====
@@ -518,6 +616,18 @@ const tornadoes = createTornadoes(THREE, {
   },
 });
 
+
+
+// ===== Tornado Tile Indicator instance (owned by tornadoes) =====
+tornadoes.createTornadoesTileIndicator({
+  enabled: (localStorage.getItem("ttiEnabled") ?? "1") === "1",
+  color: localStorage.getItem("ttiColor") || "#00FF66",
+  opacity255: Number(localStorage.getItem("ttiOpacity255") || "160"),
+  // Optional: tweak these if you want:
+  // y: 0.02,
+  // inset: 0.03,
+  maxTiles: 64,
+});
 
 // ===== Camera controller =====
 const cameraCtl = createOrbitCameraController(THREE, {
