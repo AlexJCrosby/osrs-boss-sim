@@ -7,6 +7,8 @@ import { createTargeting } from "./src/targeting.js";
 import { createDangerFloor } from "./src/dangerFloor.js";
 import { createBoss } from "./src/boss.js";
 import { createTornadoes } from "./src/tornadoes.js";
+import { createPlayerTileIndicator } from "./src/playerTileIndicator.js";
+
 
 
 
@@ -190,7 +192,75 @@ hudEl.insertBefore(speedSlider, startBtn);
 hudEl.insertBefore(speedInput, startBtn);
 hudEl.insertBefore(speedValue, startBtn);
 
+// ===== Player Tile Indicator UI =====
+const ptiLabel = document.createElement("label");
+ptiLabel.className = "hint";
+ptiLabel.style.display = "inline-flex";
+ptiLabel.style.alignItems = "center";
+ptiLabel.style.gap = "6px";
 
+const ptiToggle = document.createElement("input");
+ptiToggle.type = "checkbox";
+ptiToggle.checked = (localStorage.getItem("ptiEnabled") ?? "1") === "1";
+
+const ptiToggleText = document.createElement("span");
+ptiToggleText.textContent = "Player tile";
+
+ptiLabel.append(ptiToggle, ptiToggleText);
+
+// Color inputs (swatch + hex)
+const ptiColor = document.createElement("input");
+ptiColor.type = "color";
+ptiColor.value = localStorage.getItem("ptiColor") || "#FFB03F";
+
+const ptiHex = document.createElement("input");
+ptiHex.type = "text";
+ptiHex.value = ptiColor.value.toUpperCase();
+ptiHex.style.width = "90px";
+ptiHex.placeholder = "#RRGGBB";
+
+// Opacity (0..255 like RuneLite)
+const ptiOpacity = document.createElement("input");
+ptiOpacity.type = "range";
+ptiOpacity.min = "0";
+ptiOpacity.max = "255";
+ptiOpacity.value = String(Number(localStorage.getItem("ptiOpacity255") || "160"));
+
+const ptiOpacityNum = document.createElement("input");
+ptiOpacityNum.type = "number";
+ptiOpacityNum.min = "0";
+ptiOpacityNum.max = "255";
+ptiOpacityNum.step = "1";
+ptiOpacityNum.value = ptiOpacity.value;
+ptiOpacityNum.style.width = "64px";
+
+// Add to HUD (place before Start button so it’s visible)
+hudEl.insertBefore(ptiLabel, startBtn);
+hudEl.insertBefore(ptiColor, startBtn);
+hudEl.insertBefore(ptiHex, startBtn);
+hudEl.insertBefore(ptiOpacity, startBtn);
+hudEl.insertBefore(ptiOpacityNum, startBtn);
+
+// Wire events
+function clamp255(v) {
+  v = Number(v);
+  if (!Number.isFinite(v)) return 255;
+  return Math.max(0, Math.min(255, Math.floor(v)));
+}
+
+function normalizeHex(s) {
+  s = String(s || "").trim();
+  if (!s.startsWith("#")) s = "#" + s;
+  if (s.length === 4) {
+    // #RGB -> #RRGGBB
+    s = "#" + s[1] + s[1] + s[2] + s[2] + s[3] + s[3];
+  }
+  return s.toUpperCase();
+}
+
+
+
+// ===== Utility: world to screen coords =====
 function worldToScreen(x, y, z, camera, canvas) {
   const v = new THREE.Vector3(x, y, z);
   v.project(camera);
@@ -377,6 +447,22 @@ const player = createPlayer(THREE, {
   startY: 5,
 });
 
+// ===== Player Tile Indicator settings (persisted) =====
+const storedPTIEnabled = localStorage.getItem("ptiEnabled");
+const storedPTIColor = localStorage.getItem("ptiColor") || "#FFB03F";
+const storedPTIOpacity = Number(localStorage.getItem("ptiOpacity255") || "160");
+
+// Create indicator (TRUE position uses player.x/player.y)
+const playerTileIndicator = createPlayerTileIndicator(THREE, {
+  scene,
+  getPlayerTile: () => ({ x: player.x, y: player.y }),
+  config: {
+    enabled: storedPTIEnabled === null ? true : storedPTIEnabled === "1",
+    color: storedPTIColor,
+    opacity255: Number.isFinite(storedPTIOpacity) ? storedPTIOpacity : 160,
+  },
+});
+
 // ===== Boss =====
 const boss = createBoss(THREE, {
   scene,
@@ -458,6 +544,52 @@ let pendingDamageThisTick = 0;
 
 
 
+
+function applyPTIUIToWorld() {
+  const enabled = ptiToggle.checked;
+  const hex = normalizeHex(ptiHex.value);
+  const op = clamp255(ptiOpacityNum.value);
+
+  // persist
+  localStorage.setItem("ptiEnabled", enabled ? "1" : "0");
+  localStorage.setItem("ptiColor", hex);
+  localStorage.setItem("ptiOpacity255", String(op));
+
+  // apply
+  playerTileIndicator.setEnabled(enabled);
+  playerTileIndicator.setColor(hex);
+  playerTileIndicator.setOpacity255(op);
+}
+
+ptiToggle.addEventListener("change", applyPTIUIToWorld);
+
+ptiColor.addEventListener("input", () => {
+  ptiHex.value = ptiColor.value.toUpperCase();
+  applyPTIUIToWorld();
+});
+
+ptiHex.addEventListener("change", () => {
+  const hex = normalizeHex(ptiHex.value);
+  ptiHex.value = hex;
+  ptiColor.value = hex; // keep swatch synced if valid
+  applyPTIUIToWorld();
+});
+
+ptiOpacity.addEventListener("input", () => {
+  ptiOpacityNum.value = ptiOpacity.value;
+  applyPTIUIToWorld();
+});
+
+ptiOpacityNum.addEventListener("change", () => {
+  const op = clamp255(ptiOpacityNum.value);
+  ptiOpacityNum.value = String(op);
+  ptiOpacity.value = String(op);
+  applyPTIUIToWorld();
+});
+
+// initial apply
+applyPTIUIToWorld();
+
 // Create ONE ticker instance for the whole app
 const ticker = createTicker({
   baseTickMs: TICK_MS,
@@ -472,6 +604,9 @@ const ticker = createTicker({
     if (targeting.target && player.x === targeting.target.x && player.y === targeting.target.y) {
       targeting.clear();
     }
+
+    // Sync player tile indicator to player position
+    playerTileIndicator.syncToPlayer();
 
     // Danger floor: update + render once per fight tick
     dangerFloor.update(tick);
@@ -490,6 +625,8 @@ const ticker = createTicker({
 
 function startFightLoop() {
   ticker.start();
+  // Initial sync of player tile indicator
+  
 }
 
 
@@ -579,5 +716,3 @@ function reset() {
   targeting.clear();
   player.setPos(5, 5);
 }
-
-
