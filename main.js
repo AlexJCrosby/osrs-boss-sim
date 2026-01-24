@@ -7,10 +7,7 @@ import { createTargeting } from "./src/targeting.js";
 import { createDangerFloor } from "./src/dangerFloor.js";
 import { createBoss } from "./src/boss.js";
 import { createTornadoes } from "./src/tornadoes.js";
-import { createPlayerTileIndicator } from "./src/playerTileIndicator.js";
-
-
-
+import { createTileIndicator } from "./src/tileIndicator.js";
 
 
 console.log("THREE loaded", THREE.REVISION);
@@ -452,15 +449,11 @@ const storedPTIEnabled = localStorage.getItem("ptiEnabled");
 const storedPTIColor = localStorage.getItem("ptiColor") || "#FFB03F";
 const storedPTIOpacity = Number(localStorage.getItem("ptiOpacity255") || "160");
 
-// Create indicator (TRUE position uses player.x/player.y)
-const playerTileIndicator = createPlayerTileIndicator(THREE, {
-  scene,
-  getPlayerTile: () => ({ x: player.x, y: player.y }),
-  config: {
-    enabled: storedPTIEnabled === null ? true : storedPTIEnabled === "1",
-    color: storedPTIColor,
-    opacity255: Number.isFinite(storedPTIOpacity) ? storedPTIOpacity : 160,
-  },
+// ===== Player Tile Indicator instance (owned by player) =====
+player.createPlayerTileIndicator({
+  enabled: (localStorage.getItem("ptiEnabled") ?? "1") === "1",
+  color: localStorage.getItem("ptiColor") || "#FFB03F",
+  opacity255: Number(localStorage.getItem("ptiOpacity255") || "160"),
 });
 
 // ===== Boss =====
@@ -556,9 +549,11 @@ function applyPTIUIToWorld() {
   localStorage.setItem("ptiOpacity255", String(op));
 
   // apply
-  playerTileIndicator.setEnabled(enabled);
-  playerTileIndicator.setColor(hex);
-  playerTileIndicator.setOpacity255(op);
+  player.setTileIndicatorStyle({
+    enabled,
+    color: hex,
+    opacity255: op,
+  });
 }
 
 ptiToggle.addEventListener("change", applyPTIUIToWorld);
@@ -606,7 +601,7 @@ const ticker = createTicker({
     }
 
     // Sync player tile indicator to player position
-    playerTileIndicator.syncToPlayer();
+    player.syncTileIndicator();
 
     // Danger floor: update + render once per fight tick
     dangerFloor.update(tick);

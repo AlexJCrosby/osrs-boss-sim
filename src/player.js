@@ -1,3 +1,5 @@
+import { createTileIndicator } from "./tileIndicator.js";
+
 export function createPlayer(THREE, { scene, startX, startY }) {
   // Logical (grid) position
   const player = { x: startX, y: startY };
@@ -5,6 +7,7 @@ export function createPlayer(THREE, { scene, startX, startY }) {
   // Visual (smooth) position
   let renderX = player.x;
   let renderY = player.y;
+  
 
     // --- Tick-length movement animation (so it glides over the whole tick) ---
     let tickSeconds = 0.6; // matches your 600ms tick
@@ -36,6 +39,39 @@ export function createPlayer(THREE, { scene, startX, startY }) {
   );
   scene.add(mesh);
   mesh.renderOrder = 5;
+
+  // ===== Player tile indicator (owned by player) =====
+  let tileIndicator = null;
+
+  function createPlayerTileIndicator(config = {}) {
+    if (tileIndicator) return tileIndicator;
+
+    tileIndicator = createTileIndicator(THREE, {
+      scene,
+      getTiles: () => [{ x: player.x, y: player.y }], // TRUE tile
+      config: { maxTiles: 1, ...config },
+    });
+
+    return tileIndicator;
+  }
+
+  function syncTileIndicator() {
+    if (!tileIndicator) return;
+    tileIndicator.sync();
+  }
+
+  function setTileIndicatorStyle({ enabled, color, opacity255 } = {}) {
+    if (!tileIndicator) return;
+    if (enabled !== undefined) tileIndicator.setEnabled(enabled);
+    if (color !== undefined) tileIndicator.setColor(color);
+    if (opacity255 !== undefined) tileIndicator.setOpacity255(opacity255);
+  }
+
+  function disposeTileIndicator() {
+    if (!tileIndicator) return;
+    tileIndicator.dispose();
+    tileIndicator = null;
+  }
 
   function clamp(n, min, max) {
     return Math.max(min, Math.min(max, n));
@@ -116,9 +152,15 @@ export function createPlayer(THREE, { scene, startX, startY }) {
     get renderX() { return renderX; },
     get renderY() { return renderY; },
 
+    createPlayerTileIndicator,
+    syncTileIndicator,
+    setTileIndicatorStyle,
+    disposeTileIndicator,
+
     setTickSeconds,
     setPos,
     stepToward,
     updateVisual,
   };
 }
+
