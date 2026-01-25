@@ -32,6 +32,14 @@ export function createBoss(THREE, { scene, startX = 9, startY = 9 } = {}) {
 
   scene.add(mesh);
 
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  // for boss standard attacks
+  const raw = randInt(1, 39);
+
+
   function sync() {
     mesh.position.set(state.x + 0.5, BOSS_Y, state.y + 0.5);
   }

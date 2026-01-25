@@ -12,6 +12,21 @@ import { createTileIndicator } from "./src/tileIndicator.js";
 
 console.log("THREE loaded", THREE.REVISION);
 
+// ===== Key controls =====
+document.addEventListener("keydown", (e) => {
+  // (keep any existing key handling you already have ABOVE or BELOW)
+
+  // ===== TEMP prayer toggles (remove later when UI exists) =====
+  if (e.key === "1") {
+    playerPrayer = (playerPrayer === Prayer.RANGE) ? Prayer.NONE : Prayer.RANGE;
+    console.log("Prayer:", playerPrayer);
+  } else if (e.key === "2") {
+    playerPrayer = (playerPrayer === Prayer.MAGE) ? Prayer.NONE : Prayer.MAGE;
+    console.log("Prayer:", playerPrayer);
+  }
+});
+
+
 // ===== Config =====
 const GRID_W = 12;
 const GRID_H = 12;
@@ -108,6 +123,20 @@ document.body.appendChild(healthHud);
 const hitSplatLayer = document.createElement("div");
 hitSplatLayer.className = "hitSplatLayer";
 document.body.appendChild(hitSplatLayer);
+
+// ===== Player prayer state (MVP) =====
+const Prayer = Object.freeze({
+  NONE: "NONE",
+  RANGE: "RANGE",
+  MAGE: "MAGE",
+});
+
+// Default for now (until UI exists)
+let playerPrayer = Prayer.NONE;
+
+// Boss protection prayers mitigate by 75% => take 25% damage
+const PROTECT_PRAYER_MULT = 0.25;
+
 
 // Simple inline SVG splat background (no external assets)
 function splatSvgDataUri(fill, stroke) {
@@ -491,12 +520,31 @@ const HitStyle = Object.freeze({
 });
 
 /**
- * This is where mitigation rules live (player prayers soon).
- * For now: no mitigation, return raw amount unchanged.
+ * Mitigation rules live here (player prayers now, boss prayers later).
+ * Return a NUMBER (damage amount AFTER mitigation), not a new hit object.
  */
 function mitigateHit(hit) {
-  return hit.amount;
+  let dmg = hit.amount;
+
+  // Only boss standard attacks are affected by protection prayers (for now)
+  const isBossAttack = hit.source === HitSource.BOSS;
+  const isProtectableStyle = hit.style === HitStyle.RANGE || hit.style === HitStyle.MAGE;
+
+  if (isBossAttack && isProtectableStyle) {
+    const prayedCorrectly =
+      (hit.style === HitStyle.RANGE && playerPrayer === Prayer.RANGE) ||
+      (hit.style === HitStyle.MAGE && playerPrayer === Prayer.MAGE);
+
+    if (prayedCorrectly) {
+      dmg = Math.round(dmg * PROTECT_PRAYER_MULT);
+    }
+  }
+
+  // Safety clamp
+  if (!Number.isFinite(dmg)) return 0;
+  return Math.max(0, dmg);
 }
+
 
 /**
  * Unified damage entry point.
@@ -790,7 +838,6 @@ function startFightLoop() {
 function stopFightLoop() {
   ticker.stop();
 }
-
 
 // ===== Resize + render loop =====
 function onResize() {
