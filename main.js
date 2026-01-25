@@ -476,15 +476,54 @@ function updateHealthUI() {
 }
 updateHealthUI();
 
-function applyDamage(amount, sourceLabel) {
-  currentHP -= amount;
+// ===== Hit pipeline (ALL damage should go through applyHit) =====
+const HitSource = Object.freeze({
+  FLOOR: "FLOOR",
+  TORNADO: "TORNADO",
+  BOSS: "BOSS",
+});
+
+const HitStyle = Object.freeze({
+  RANGE: "RANGE",
+  MAGE: "MAGE",
+  MELEE: "MELEE",
+  TYPELESS: "TYPELESS",
+});
+
+/**
+ * This is where mitigation rules live (player prayers soon).
+ * For now: no mitigation, return raw amount unchanged.
+ */
+function mitigateHit(hit) {
+  return hit.amount;
+}
+
+/**
+ * Unified damage entry point.
+ * All systems (danger floor, tornadoes, boss, etc.) should call THIS.
+ */
+function applyHit(hit) {
+  if (!hit) return;
+
+  const source = hit.source ?? "UNKNOWN";
+  const style = hit.style ?? HitStyle.TYPELESS;
+
+  const rawAmount = Number(hit.amount);
+  if (!Number.isFinite(rawAmount) || rawAmount <= 0) return;
+
+  // Allow mitigation logic to clamp/modify damage (prayers come here later)
+  const mitigated = Math.max(0, Math.floor(mitigateHit({ ...hit, amount: rawAmount })));
+
+  // Still count 0-damage hits in logs if you want later; for now we just no-op
+  if (mitigated <= 0) return;
+
+  currentHP -= mitigated;
   if (currentHP < 0) currentHP = 0;
 
   // Accumulate for a single hit splat at end of tick
-  // (Works even if multiple tornadoes hit in same tick.)
-  pendingDamageThisTick += amount;
+  pendingDamageThisTick += mitigated;
 
-  console.log(`${sourceLabel} hit: -${amount} HP (now ${currentHP}/${maxHP})`);
+  console.log(`[HIT] ${source}/${style}: -${mitigated} HP (now ${currentHP}/${maxHP})`);
   updateHealthUI();
 
   if (currentHP <= 0) {
@@ -499,6 +538,7 @@ function applyDamage(amount, sourceLabel) {
     }
   }
 }
+
 
 statusEl.textContent = "Lobby"; // <-- moved here (after statusEl exists)
 
@@ -576,8 +616,14 @@ const dangerFloor = createDangerFloor(THREE, {
   gridH: GRID_H,
   getPlayerTile: () => ({ x: player.x, y: player.y }),
   onPlayerDamaged: (amount) => {
-  applyDamage(amount, "Danger floor");
+    applyHit({
+      source: HitSource.FLOOR,
+      style: HitStyle.TYPELESS,
+      amount,
+      countsTowardBossSwap: false,
+    });
   },
+
 
   config: {
     spawnDelayTicks: 12,
@@ -595,8 +641,14 @@ const tornadoes = createTornadoes(THREE, {
   gridH: GRID_H,
   getPlayerTile: () => ({ x: player.x, y: player.y }),
   onPlayerDamaged: (amount) => {
-  applyDamage(amount, "Tornado");
+    applyHit({
+      source: HitSource.TORNADO,
+      style: HitStyle.TYPELESS,
+      amount,
+      countsTowardBossSwap: false,
+    });
   },
+
 
   config: {
     firstSpawnTick: 60,
