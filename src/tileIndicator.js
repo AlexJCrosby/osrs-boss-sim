@@ -42,6 +42,7 @@ export function createTileIndicator(THREE, {
   const obj = new THREE.LineSegments(geo, mat);
   obj.visible = !!enabled;
   obj.renderOrder = renderOrder;
+  obj.frustumCulled = false; // IMPORTANT: bounds are dynamic; avoid flicker/culling
   scene.add(obj);
 
   function writeTile(offset, x, z) {
@@ -73,6 +74,7 @@ export function createTileIndicator(THREE, {
 
     geo.setDrawRange(0, count * VERTS_PER_TILE);
     geo.attributes.position.needsUpdate = true;
+    geo.computeBoundingSphere();
   }
 
   function setEnabled(v) { obj.visible = !!v; }

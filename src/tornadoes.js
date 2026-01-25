@@ -161,10 +161,11 @@ export function createTornadoes(THREE, {
   let tileIndicator = null;
 
   function getTornadoTiles() {
-    // Only show tiles for currently active tornadoes
-    if (!active || !tornadoes.length) return [];
+    // Show whenever tornado objects exist (regardless of active flag)
+    if (!tornadoes.length) return [];
     return tornadoes.map(t => ({ x: t.x, y: t.y }));
   }
+
 
   function createTornadoesTileIndicator(config = {}) {
     if (tileIndicator) return tileIndicator;
@@ -184,6 +185,9 @@ export function createTornadoes(THREE, {
 
   function syncTornadoesTileIndicator() {
     if (!tileIndicator) return;
+    // (debug log optional)
+    // const tiles = getTornadoTiles();
+    // console.log("TTI sync tiles:", tiles.length, "active:", active, "tornadoes:", tornadoes.length);
     tileIndicator.sync();
   }
 
@@ -309,6 +313,7 @@ export function createTornadoes(THREE, {
     }
 
     console.log(`Tornadoes spawned: ${count} (wave ${idx + 1}) at tick ${fightTick}`);
+    syncTornadoesTileIndicator();
   }
 
   function updateTornadoChase() {
@@ -318,7 +323,7 @@ export function createTornadoes(THREE, {
       let x = t.x;
       let y0 = t.y;
 
-      let steps = speedTilesPerTick; // keep at 1 for OSRS tornadoes
+      let steps = speedTilesPerTick;
       while (steps-- > 0 && (x !== p.x || y0 !== p.y)) {
         const next = greedyStepToward(x, y0, p.x, p.y);
         x = clamp(next.x, 0, gridW - 1);
@@ -330,29 +335,32 @@ export function createTornadoes(THREE, {
       t.x = x;
       t.y = y0;
 
-      if (moved) {
-        beginMoveToCurrentLogical(t);
-      }
+      if (moved) beginMoveToCurrentLogical(t);
 
-      // Collision: same tile (logical)
       if (t.x === p.x && t.y === p.y) {
         const dmg = randInt(damageMin, damageMax);
         onPlayerDamaged(dmg);
       }
-      syncTornadoesTileIndicator();
     }
+
+    // Sync ONCE after all tornadoes updated
+    syncTornadoesTileIndicator();
   }
+
 
   function despawnIfNeeded(fightTick) {
     if (!active) return;
     if (waveStartTick === null) return;
 
     if (fightTick >= waveStartTick + durationTicks) {
+      console.log("DESPAWN trigger", { fightTick, waveStartTick, durationTicks });
       for (const t of tornadoes) scene.remove(t.mesh);
       tornadoes = [];
       active = false;
       waveStartTick = null;
       console.log(`Tornadoes despawn at tick ${fightTick}`);
+      console.log("DESPAWN", { fightTick, waveStartTick, durationTicks }); // temporary debugging
+      syncTornadoesTileIndicator();
     }
   }
 
@@ -394,14 +402,13 @@ export function createTornadoes(THREE, {
     disposeTornadoesTileIndicator,
     update(fightTick) {
       ensureWave(fightTick);
-      syncTornadoesTileIndicator();
+      
 
       if (active) {
         updateTornadoChase();
       }
 
       despawnIfNeeded(fightTick);
-      syncTornadoesTileIndicator();
     },
   };
 }
