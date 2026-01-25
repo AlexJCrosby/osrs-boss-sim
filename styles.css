@@ -149,3 +149,54 @@ canvas#game {
   color: #ffffff;
   text-shadow: 0 2px 0 rgba(0,0,0,0.9);
 }
+
+/* ===== Prayer UI (OSRS-style tab overlay) ===== */
+.prayer-ui {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 390px;
+  height: 529px;
+  z-index: 40;
+
+  background-image: url("./prayer-tab.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+
+  /* This overlay is interactive */
+  pointer-events: auto;
+  user-select: none;
+}
+
+/* Clickable regions on top of the prayer icons */
+.prayer-btn {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  /* Debug-friendly: uncomment to see hitboxes */
+  /* outline: 1px dashed rgba(255,255,255,0.25); */
+}
+
+/* Positions tuned to your screenshot image */
+#prayRange {
+  left: 95px;   /* icon area 1 */
+  top: 225px;
+}
+
+#prayMage {
+  left: 165px;  /* icon area 2 */
+  top: 225px;
+}
+
+/* Visual feedback when a prayer is active */
+.prayer-btn.active {
+  outline: 2px solid rgba(255, 214, 90, 0.95);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+

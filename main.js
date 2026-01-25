@@ -19,13 +19,14 @@ document.addEventListener("keydown", (e) => {
   // ===== TEMP prayer toggles (remove later when UI exists) =====
   if (e.key === "1") {
     playerPrayer = (playerPrayer === Prayer.RANGE) ? Prayer.NONE : Prayer.RANGE;
+    updatePrayerUI();
     console.log("Prayer:", playerPrayer);
   } else if (e.key === "2") {
     playerPrayer = (playerPrayer === Prayer.MAGE) ? Prayer.NONE : Prayer.MAGE;
+    updatePrayerUI();
     console.log("Prayer:", playerPrayer);
   }
 });
-
 
 // ===== Config =====
 const GRID_W = 12;
@@ -133,6 +134,32 @@ const Prayer = Object.freeze({
 
 // Default for now (until UI exists)
 let playerPrayer = Prayer.NONE;
+
+// ===== Prayer UI wiring =====
+const prayRangeBtn = document.getElementById("prayRange");
+const prayMageBtn = document.getElementById("prayMage");
+
+function setPlayerPrayer(next) {
+  // Toggle behaviour: clicking same prayer turns it off
+  if (playerPrayer === next) playerPrayer = Prayer.NONE;
+  else playerPrayer = next;
+
+  updatePrayerUI();
+}
+
+function updatePrayerUI() {
+  if (!prayRangeBtn || !prayMageBtn) return;
+
+  prayRangeBtn.classList.toggle("active", playerPrayer === Prayer.RANGE);
+  prayMageBtn.classList.toggle("active", playerPrayer === Prayer.MAGE);
+}
+
+// Click handlers
+if (prayRangeBtn) prayRangeBtn.addEventListener("click", () => setPlayerPrayer(Prayer.RANGE));
+if (prayMageBtn) prayMageBtn.addEventListener("click", () => setPlayerPrayer(Prayer.MAGE));
+
+// Ensure correct initial highlight
+updatePrayerUI();
 
 // Boss protection prayers mitigate by 75% => take 25% damage
 const PROTECT_PRAYER_MULT = 0.25;
@@ -881,6 +908,9 @@ function startFight() {
   currentHP = maxHP;
   updateHealthUI();
 
+  playerPrayer = Prayer.NONE;
+  updatePrayerUI();
+
   pendingDamageThisTick = 0;
   hitSplatLayer.innerHTML = "";
   hitSplats.length = 0;
@@ -912,6 +942,9 @@ function reset() {
   maxHP = Math.min(99, Math.max(10, Number(hpInput.value || 99)));
   currentHP = maxHP;
   updateHealthUI();
+
+  playerPrayer = Prayer.NONE;
+  updatePrayerUI();
 
   pendingDamageThisTick = 0;
   hitSplatLayer.innerHTML = "";
