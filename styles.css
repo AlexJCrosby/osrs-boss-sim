@@ -184,13 +184,13 @@ canvas#game {
 
 /* Positions tuned to your screenshot image */
 #prayRange {
-  left: 95px;   /* icon area 1 */
-  top: 225px;
+  left: 162px;
+  top: 241px;
 }
 
 #prayMage {
-  left: 165px;  /* icon area 2 */
-  top: 225px;
+  left: 90px;   /* icon area 1 */
+  top: 241px;
 }
 
 /* Visual feedback when a prayer is active */

@@ -12,22 +12,6 @@ import { createTileIndicator } from "./src/tileIndicator.js";
 
 console.log("THREE loaded", THREE.REVISION);
 
-// ===== Key controls =====
-document.addEventListener("keydown", (e) => {
-  // (keep any existing key handling you already have ABOVE or BELOW)
-
-  // ===== TEMP prayer toggles (remove later when UI exists) =====
-  if (e.key === "1") {
-    playerPrayer = (playerPrayer === Prayer.RANGE) ? Prayer.NONE : Prayer.RANGE;
-    updatePrayerUI();
-    console.log("Prayer:", playerPrayer);
-  } else if (e.key === "2") {
-    playerPrayer = (playerPrayer === Prayer.MAGE) ? Prayer.NONE : Prayer.MAGE;
-    updatePrayerUI();
-    console.log("Prayer:", playerPrayer);
-  }
-});
-
 // ===== Config =====
 const GRID_W = 12;
 const GRID_H = 12;
@@ -907,9 +891,6 @@ function startFight() {
   maxHP = Math.min(99, Math.max(10, Number(hpInput.value || 99)));
   currentHP = maxHP;
   updateHealthUI();
-
-  playerPrayer = Prayer.NONE;
-  updatePrayerUI();
 
   pendingDamageThisTick = 0;
   hitSplatLayer.innerHTML = "";
