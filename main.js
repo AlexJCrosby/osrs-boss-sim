@@ -658,7 +658,18 @@ const boss = createBoss(THREE, {
   scene,
   startX: 9,
   startY: 9,
+
+  onAttack: ({ style, amount }) => {
+    // style is "RANGE" or "MAGE"
+    applyHit({
+      source: HitSource.BOSS,
+      style: style,  // matches your HitStyle strings ("RANGE"/"MAGE")
+      amount,
+      countsTowardBossSwap: true,
+    });
+  },
 });
+
 
 // ===== Targeting (target + ring + click-to-set) =====
 const targeting = createTargeting(THREE, {
@@ -831,6 +842,10 @@ const ticker = createTicker({
     // Tornadoes: update once per fight tick
     tornadoes.update(tick);
 
+    // Boss: update once per fight tick
+    boss.update(tick);
+
+
     if (pendingDamageThisTick > 0) {
       spawnHitSplat({ value: pendingDamageThisTick, kind: "damage" });
       pendingDamageThisTick = 0;
@@ -885,6 +900,7 @@ function startFight() {
 
   tick = 0;
 
+  boss.resetCombat();
   dangerFloor.reset();
   tornadoes.reset();
 
@@ -918,6 +934,7 @@ function reset() {
   tickEl.textContent = "0";
   dangerFloor.reset();
   tornadoes.reset();
+  boss.resetCombat();
 
   // On reset, go back to full HP of the chosen start value
   maxHP = Math.min(99, Math.max(10, Number(hpInput.value || 99)));
