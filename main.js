@@ -8,6 +8,8 @@ import { createDangerFloor } from "./src/dangerFloor.js";
 import { createBoss } from "./src/boss.js";
 import { createTornadoes } from "./src/tornadoes.js";
 import { createTileIndicator } from "./src/tileIndicator.js";
+import { createProjectiles } from "./src/projectiles.js";
+
 
 
 console.log("THREE loaded", THREE.REVISION);
@@ -641,6 +643,10 @@ const player = createPlayer(THREE, {
   startY: 5,
 });
 
+// ===== Projectiles =====
+const projectiles = createProjectiles(THREE, { scene });
+
+
 // ===== Player Tile Indicator settings (persisted) =====
 const storedPTIEnabled = localStorage.getItem("ptiEnabled");
 const storedPTIColor = localStorage.getItem("ptiColor") || "#FFB03F";
@@ -653,21 +659,52 @@ player.createPlayerTileIndicator({
   opacity255: Number(localStorage.getItem("ptiOpacity255") || "160"),
 });
 
+function bossWorldCenter() {
+  return new THREE.Vector3(boss.x, 0, boss.y);
+}
+
+
+
+function playerWorldCenter() {
+  // Your arena uses tile coords directly in world space (1 tile = 1 unit)
+  // Center of a tile is (x + 0.5, z + 0.5) if your tile origin is corner-based.
+  // If your meshes already sit on integer centers, remove the +0.5.
+
+  const x = (player.x ?? 0);
+  const y = (player.y ?? 0);
+
+  // Most of your code uses x/y as tile coords directly.
+  // In your THREE scene, y is usually mapped to Z.
+  return new THREE.Vector3(x, 0, y);
+}
+
+function handleBossAttack({ style, amount }) {
+  if (player == null) return;
+  // Spawn projectile
+  projectiles.spawnBossProjectile({
+    style,
+    from: bossWorldCenter().add(new THREE.Vector3(0, 0.4, 0)),  // lift a bit
+    to: playerWorldCenter().add(new THREE.Vector3(0, 0.35, 0)), // aim at torso-ish
+  });
+
+  // Apply damage through the hit pipeline (you already have this)
+  applyHit({
+    source: HitSource.BOSS,
+    style: style, // "RANGE"/"MAGE" matches your HitStyle strings
+    amount,
+    countsTowardBossSwap: true,
+  });
+}
+
+
+
+
 // ===== Boss =====
 const boss = createBoss(THREE, {
   scene,
   startX: 9,
   startY: 9,
-
-  onAttack: ({ style, amount }) => {
-    // style is "RANGE" or "MAGE"
-    applyHit({
-      source: HitSource.BOSS,
-      style: style,  // matches your HitStyle strings ("RANGE"/"MAGE")
-      amount,
-      countsTowardBossSwap: true,
-    });
-  },
+  onAttack: handleBossAttack,
 });
 
 
@@ -884,6 +921,7 @@ function animate(now) {
 
   player.updateVisual(dt);
   tornadoes.updateVisual(dt);
+  projectiles.updateVisual(dt);
   cameraCtl.update(dt);
   updateHitSplats(dt);
 
@@ -903,6 +941,8 @@ function startFight() {
   boss.resetCombat();
   dangerFloor.reset();
   tornadoes.reset();
+  projectiles.reset();
+
 
   maxHP = Math.min(99, Math.max(10, Number(hpInput.value || 99)));
   currentHP = maxHP;
@@ -935,6 +975,8 @@ function reset() {
   dangerFloor.reset();
   tornadoes.reset();
   boss.resetCombat();
+  projectiles.reset();
+
 
   // On reset, go back to full HP of the chosen start value
   maxHP = Math.min(99, Math.max(10, Number(hpInput.value || 99)));
