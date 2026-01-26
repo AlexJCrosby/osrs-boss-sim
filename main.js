@@ -48,6 +48,14 @@ const playerAction = {
   eatCd: 0,             // ticks until can eat again
 };
 
+// ===== Player combat control =====
+const playerCombat = {
+  wantsToAttackBoss: false, // set when boss is clicked
+  attackStalled: true,      // set true when player moves
+  moveLockTicks: 0,         // 1 tick lock after attack fires
+  weaponSpeed: 4,
+};
+
 // Update the little UI line in the inventory tab
 const equippedIndicatorEl = document.getElementById("equippedIndicator");
 function updateEquippedIndicator() {
@@ -105,6 +113,27 @@ hpInput.addEventListener("change", () => {
 showBarToggle.addEventListener("change", () => {
   localStorage.setItem("showHPBar", showBarToggle.checked ? "1" : "0");
   updateHealthUI(); // will be defined below
+});
+
+canvas.addEventListener("click", (e) => {
+  if (state !== GameState.FIGHT) return;
+
+  const rect = canvas.getBoundingClientRect();
+  mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+  raycaster.setFromCamera(mouseNDC, camera);
+
+  // Check boss mesh only
+  const hits = raycaster.intersectObject(boss.mesh, false);
+
+  if (hits.length > 0) {
+    // Boss was clicked
+    onBossClicked();
+    return;
+  }
+
+  // Otherwise, let existing tile targeting handle movement
 });
 
 // ===== Health UI (orb + optional bar) =====
@@ -342,6 +371,11 @@ hudEl.insertBefore(godLabel, startBtn);
 godToggle.addEventListener("change", () => {
   localStorage.setItem("godMode", godToggle.checked ? "1" : "0");
 });
+
+// ===== Boss click detection =====
+const raycaster = new THREE.Raycaster();
+const mouseNDC = new THREE.Vector2();
+
 
 // ===== Slow-mo speed control (persisted) =====
 const speedLabel = document.createElement("span");
@@ -953,7 +987,15 @@ let tick = 0;
 let pendingDamageThisTick = 0;
 
 
+function onBossClicked() {
+  // Rule: attempting to attack ALWAYS stops movement
+  targeting.clear();
 
+  playerCombat.wantsToAttackBoss = true;
+  playerCombat.attackStalled = false;
+
+  console.log("Boss clicked: attack attempt");
+}
 
 function applyPTIUIToWorld() {
   const enabled = ptiToggle.checked;
@@ -1001,6 +1043,8 @@ ptiOpacityNum.addEventListener("change", () => {
 
 // initial apply
 applyPTIUIToWorld();
+
+
 
 // Create ONE ticker instance for the whole app
 const ticker = createTicker({
