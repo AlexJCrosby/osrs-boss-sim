@@ -9,6 +9,8 @@ import { createBoss } from "./src/boss.js";
 import { createTornadoes } from "./src/tornadoes.js";
 import { createTileIndicator } from "./src/tileIndicator.js";
 import { createProjectiles } from "./src/projectiles.js";
+import { clearInventory, addItemToInventory, renderInventory } from "./src/inventory.js";
+
 
 
 console.log("THREE loaded", THREE.REVISION);
@@ -33,6 +35,8 @@ const tickEl = document.getElementById("tick");
 const targetEl = document.getElementById("target");
 const statusEl = document.getElementById("status");
 const startBtn = document.getElementById("startBtn");
+
+
 
 // ===== Health UX controls (persisted) =====
 const hpLabel = document.createElement("span");
@@ -153,6 +157,7 @@ setActiveSideTab("prayer");
 
 // ===== Inventory grid placeholder (28 slots) =====
 const invGridEl = document.getElementById("invGrid");
+
 if (invGridEl) {
   invGridEl.innerHTML = "";
   for (let i = 0; i < 28; i++) {
@@ -161,6 +166,25 @@ if (invGridEl) {
     slot.dataset.index = String(i);
     invGridEl.appendChild(slot);
   }
+}
+
+// ===== Inventory: seed + first render =====
+if (invGridEl) {
+  clearInventory();
+  addItemToInventory("STAFF", 1);
+  addItemToInventory("BOW", 1);
+  addItemToInventory("PADDLEFISH", 10);
+  renderInventory(invGridEl);
+}
+
+// ===== Inventory: click debug =====
+if (invGridEl) {
+  invGridEl.addEventListener("click", (e) => {
+    const slotEl = e.target.closest(".inv-slot");
+    if (!slotEl) return;
+    const idx = Number(slotEl.dataset.index);
+    console.log("Clicked inv slot:", idx);
+  });
 }
 
 // ===== Prayer UI wiring =====
