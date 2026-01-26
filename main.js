@@ -115,26 +115,38 @@ showBarToggle.addEventListener("change", () => {
   updateHealthUI(); // will be defined below
 });
 
-canvas.addEventListener("click", (e) => {
-  if (state !== GameState.FIGHT) return;
+// ===== Boss click detection (intercepts BEFORE targeting.js mousedown) =====
+const raycaster = new THREE.Raycaster();
+const mouseNDC = new THREE.Vector2();
 
+function setMouseFromEvent(e) {
   const rect = canvas.getBoundingClientRect();
   mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+}
 
-  raycaster.setFromCamera(mouseNDC, camera);
+// IMPORTANT: use CAPTURE so we run before targeting.js's mousedown handler
+canvas.addEventListener(
+  "mousedown",
+  (e) => {
+    if (e.button !== 0) return; // left click only
+    if (state !== GameState.FIGHT) return;
 
-  // Check boss mesh only
-  const hits = raycaster.intersectObject(boss.mesh, false);
+    setMouseFromEvent(e);
+    raycaster.setFromCamera(mouseNDC, camera);
 
-  if (hits.length > 0) {
-    // Boss was clicked
+    const hits = raycaster.intersectObject(boss.mesh, false);
+    if (hits.length === 0) return;
+
+    // Boss was clicked -> treat as attack attempt ONLY (no movement target)
+    e.preventDefault();
+    e.stopImmediatePropagation(); // stops targeting.js mousedown from running
+    e.stopPropagation();
+
     onBossClicked();
-    return;
-  }
-
-  // Otherwise, let existing tile targeting handle movement
-});
+  },
+  true // <--- capture!
+);
 
 // ===== Health UI (orb + optional bar) =====
 const healthHud = document.createElement("div");
@@ -371,11 +383,6 @@ hudEl.insertBefore(godLabel, startBtn);
 godToggle.addEventListener("change", () => {
   localStorage.setItem("godMode", godToggle.checked ? "1" : "0");
 });
-
-// ===== Boss click detection =====
-const raycaster = new THREE.Raycaster();
-const mouseNDC = new THREE.Vector2();
-
 
 // ===== Slow-mo speed control (persisted) =====
 const speedLabel = document.createElement("span");
