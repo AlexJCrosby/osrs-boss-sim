@@ -21,10 +21,31 @@
     <canvas id="game"></canvas>
 
     <!-- ===== Prayer UI (bottom-right) ===== -->
-    <div id="prayerUI" class="prayer-ui" aria-label="Prayer tab">
-      <button id="prayRange" class="prayer-btn" type="button" aria-label="Protect from Missiles"></button>
-      <button id="prayMage" class="prayer-btn" type="button" aria-label="Protect from Magic"></button>
+    <!-- ===== Side panel (bottom-right): Tabs (Prayer / Inventory) ===== -->
+    <div id="sidePanel" class="side-panel" aria-label="Side panel">
+      <div class="side-tabs" role="tablist" aria-label="Side panel tabs">
+        <button id="tabPrayer" class="side-tab active" type="button" role="tab" aria-selected="true">
+          Prayer
+        </button>
+        <button id="tabInventory" class="side-tab" type="button" role="tab" aria-selected="false">
+          Inventory
+        </button>
+      </div>
+
+      <div class="side-content">
+        <!-- Prayer tab view (keeps your existing button ids) -->
+        <div id="prayerTab" class="tab-view prayer-ui" aria-label="Prayer tab">
+          <button id="prayRange" class="prayer-btn" type="button" aria-label="Protect from Missiles"></button>
+          <button id="prayMage" class="prayer-btn" type="button" aria-label="Protect from Magic"></button>
+        </div>
+
+        <!-- Inventory tab view (placeholder grid for now) -->
+        <div id="inventoryTab" class="tab-view inventory-ui is-hidden" aria-label="Inventory tab">
+          <div id="invGrid" class="inv-grid" aria-label="Inventory grid"></div>
+        </div>
+      </div>
     </div>
+
 
     <script type="module" src="./main.js"></script>
   </body>

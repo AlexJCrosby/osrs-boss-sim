@@ -152,21 +152,18 @@ canvas#game {
 
 /* ===== Prayer UI (OSRS-style tab overlay) ===== */
 .prayer-ui {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  width: 390px;
-  height: 529px;
-  z-index: 40;
+  position: relative;
+  width: 100%;
+  height: 100%;
 
   background-image: url("./prayer-tab.png");
   background-size: 100% 100%;
   background-repeat: no-repeat;
 
-  /* This overlay is interactive */
   pointer-events: auto;
   user-select: none;
 }
+
 
 /* Clickable regions on top of the prayer icons */
 .prayer-btn {
@@ -200,3 +197,77 @@ canvas#game {
   border-radius: 8px;
 }
 
+/* ===== Side panel shell (tabs + content container) ===== */
+.side-panel {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.side-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px 8px;
+  background: rgba(23, 26, 33, 0.92);
+  border: 1px solid #222734;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+}
+
+.side-tab {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #2b3346;
+  background: #10131a;
+  color: var(--text);
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.side-tab.active {
+  outline: 2px solid rgba(255, 214, 90, 0.75);
+  outline-offset: 0px;
+}
+
+.side-content {
+  width: 390px;
+  height: 529px;
+  border: 1px solid #222734;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+  background: rgba(16, 19, 26, 0.92);
+}
+
+.tab-view {
+  width: 100%;
+  height: 100%;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+/* ===== Inventory placeholder view ===== */
+.inventory-ui {
+  position: relative;
+  padding: 14px;
+}
+
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(7, 1fr);
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+}
+
+.inv-slot {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.25);
+  border-radius: 10px;
+}

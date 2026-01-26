@@ -11,7 +11,6 @@ import { createTileIndicator } from "./src/tileIndicator.js";
 import { createProjectiles } from "./src/projectiles.js";
 
 
-
 console.log("THREE loaded", THREE.REVISION);
 
 // ===== Config =====
@@ -120,6 +119,49 @@ const Prayer = Object.freeze({
 
 // Default for now (until UI exists)
 let playerPrayer = Prayer.NONE;
+
+// ===== Side panel tabs (Prayer / Inventory) =====
+const tabPrayerBtn = document.getElementById("tabPrayer");
+const tabInventoryBtn = document.getElementById("tabInventory");
+const prayerTabEl = document.getElementById("prayerTab");
+const inventoryTabEl = document.getElementById("inventoryTab");
+
+function setActiveSideTab(tabName) {
+  const isPrayer = tabName === "prayer";
+
+  // Views
+  if (prayerTabEl) prayerTabEl.classList.toggle("is-hidden", !isPrayer);
+  if (inventoryTabEl) inventoryTabEl.classList.toggle("is-hidden", isPrayer);
+
+  // Buttons
+  if (tabPrayerBtn) {
+    tabPrayerBtn.classList.toggle("active", isPrayer);
+    tabPrayerBtn.setAttribute("aria-selected", String(isPrayer));
+  }
+  if (tabInventoryBtn) {
+    tabInventoryBtn.classList.toggle("active", !isPrayer);
+    tabInventoryBtn.setAttribute("aria-selected", String(!isPrayer));
+  }
+}
+
+// Click handlers
+if (tabPrayerBtn) tabPrayerBtn.addEventListener("click", () => setActiveSideTab("prayer"));
+if (tabInventoryBtn) tabInventoryBtn.addEventListener("click", () => setActiveSideTab("inventory"));
+
+// Default view on load
+setActiveSideTab("prayer");
+
+// ===== Inventory grid placeholder (28 slots) =====
+const invGridEl = document.getElementById("invGrid");
+if (invGridEl) {
+  invGridEl.innerHTML = "";
+  for (let i = 0; i < 28; i++) {
+    const slot = document.createElement("div");
+    slot.className = "inv-slot";
+    slot.dataset.index = String(i);
+    invGridEl.appendChild(slot);
+  }
+}
 
 // ===== Prayer UI wiring =====
 const prayRangeBtn = document.getElementById("prayRange");
