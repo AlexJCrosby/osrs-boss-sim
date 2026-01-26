@@ -9,11 +9,16 @@ import { createBoss } from "./src/boss.js";
 import { createTornadoes } from "./src/tornadoes.js";
 import { createTileIndicator } from "./src/tileIndicator.js";
 import { createProjectiles } from "./src/projectiles.js";
-import { clearInventory, addItemToInventory, renderInventory } from "./src/inventory.js";
+import {
+  ITEM_DEFS,
+  inventory,
+  clearInventory,
+  addItemToInventory,
+  removeOneFromSlot,
+  renderInventory
+} from "./src/inventory.js";
 
 
-
-console.log("THREE loaded", THREE.REVISION);
 
 // ===== Config =====
 const GRID_W = 12;
@@ -36,6 +41,20 @@ const targetEl = document.getElementById("target");
 const statusEl = document.getElementById("status");
 const startBtn = document.getElementById("startBtn");
 
+// ===== Player: equipment + action timers =====
+const playerAction = {
+  equippedWeapon: null, // "STAFF" | "BOW" | null
+  attackCd: 0,          // ticks until next attack can fire
+  eatCd: 0,             // ticks until can eat again
+};
+
+// Update the little UI line in the inventory tab
+const equippedIndicatorEl = document.getElementById("equippedIndicator");
+function updateEquippedIndicator() {
+  if (!equippedIndicatorEl) return;
+  const w = playerAction.equippedWeapon;
+  equippedIndicatorEl.textContent = `Equipped: ${w ? ITEM_DEFS[w]?.name ?? w : "None"}`;
+}
 
 
 // ===== Health UX controls (persisted) =====
@@ -177,15 +196,78 @@ if (invGridEl) {
   renderInventory(invGridEl);
 }
 
-// ===== Inventory: click debug =====
+// ===== Inventory: click -> equip/eat =====
 if (invGridEl) {
   invGridEl.addEventListener("click", (e) => {
     const slotEl = e.target.closest(".inv-slot");
     if (!slotEl) return;
+
     const idx = Number(slotEl.dataset.index);
-    console.log("Clicked inv slot:", idx);
+    const stack = inventory.slots[idx];
+    if (!stack) return;
+
+    const def = ITEM_DEFS[stack.id];
+    if (!def) return;
+
+    // Equip weapon
+    if (def.type === "WEAPON") {
+      playerAction.equippedWeapon = stack.id; // "STAFF" or "BOW"
+      updateEquippedIndicator();
+      console.log("Equipped weapon:", stack.id);
+      return;
+    }
+
+    // Eat food
+    if (def.type === "FOOD") {
+      // 1) eat cooldown: once every 3 ticks
+      if (playerAction.eatCd > 0) {
+        console.log("Can't eat yet. eatCd:", playerAction.eatCd);
+        return;
+      }
+
+      // 2) consume item
+      const removed = removeOneFromSlot(idx);
+      if (!removed) return;
+
+      // 3) heal (you already have currentHP/maxHP/updateHealthUI in your codebase)
+      //    If your variables are named differently, just map them here.
+      if (typeof currentHP === "number" && typeof maxHP === "number") {
+        currentHP = Math.min(maxHP, currentHP + (def.heal ?? 0));
+        if (typeof updateHealthUI === "function") updateHealthUI();
+      } else {
+        console.warn("Hook up heal: currentHP/maxHP/updateHealthUI not found in this scope.");
+      }
+
+      // 4) timers: eat cd + attack delay
+      playerAction.eatCd = 3;
+      playerAction.attackCd += 3; // adds 3 ticks on top of whatever is left
+
+      // 5) re-render inventory
+      renderInventory(invGridEl);
+
+      console.log("Ate:", stack.id, "heal:", def.heal, "eatCd:", playerAction.eatCd, "attackCd:", playerAction.attackCd);
+      return;
+    }
   });
 }
+
+// ===== Inventory: reset/seed helper =====
+    function resetInventoryToStarter() {
+      if (!invGridEl) return;
+
+      clearInventory();
+      addItemToInventory("STAFF", 1);
+      addItemToInventory("BOW", 1);
+      addItemToInventory("PADDLEFISH", 10);
+
+      // Reset equipment + timers too (optional but usually desired on reset)
+      playerAction.equippedWeapon = null;
+      playerAction.attackCd = 0;
+      playerAction.eatCd = 0;
+
+      renderInventory(invGridEl);
+      updateEquippedIndicator();
+    }
 
 // ===== Prayer UI wiring =====
 const prayRangeBtn = document.getElementById("prayRange");
@@ -925,9 +1007,12 @@ const ticker = createTicker({
   baseTickMs: TICK_MS,
   onTick: () => {
     if (state !== GameState.FIGHT) return;
-
+    
     tick++;
     tickEl.textContent = String(tick);
+    // ===== Player action timers: tick down =====
+    playerAction.attackCd = Math.max(0, playerAction.attackCd - 1);
+    playerAction.eatCd = Math.max(0, playerAction.eatCd - 1);
 
     player.stepToward(targeting.target, PLAYER_SPEED_TILES_PER_TICK, GRID_W, GRID_H);
 
@@ -1043,7 +1128,6 @@ function reset() {
   boss.resetCombat();
   projectiles.reset();
 
-
   // On reset, go back to full HP of the chosen start value
   maxHP = Math.min(99, Math.max(10, Number(hpInput.value || 99)));
   currentHP = maxHP;
@@ -1052,10 +1136,13 @@ function reset() {
   playerPrayer = Prayer.NONE;
   updatePrayerUI();
 
+  resetInventoryToStarter();
+
   pendingDamageThisTick = 0;
   hitSplatLayer.innerHTML = "";
   hitSplats.length = 0;
 
   targeting.clear();
   player.setPos(5, 5);
+  
 }
