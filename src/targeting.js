@@ -11,14 +11,14 @@ export function createTargeting(THREE, { scene, canvas, targetEl, pickTileFromMo
 
   function setTarget(hit) {
     target = hit;
-    targetEl.textContent = `${hit.x},${hit.y}`;
+    if (targetEl) targetEl.textContent = `${hit.x},${hit.y}`;
     ring.visible = true;
     ring.position.set(hit.x + 0.5, 0.01, hit.y + 0.5);
   }
 
   function clear() {
     target = null;
-    targetEl.textContent = "none";
+    if (targetEl) targetEl.textContent = "none";
     ring.visible = false;
   }
 

@@ -10,14 +10,40 @@
     <link rel="icon" href="data:," />
   </head>
   <body>
-    <header class="hud">
-      <div><strong>Tick:</strong> <span id="tick">0</span></div>
-      <div><strong>Target:</strong> <span id="target">none</span></div>
-      <div><strong>Status:</strong> <span id="status">Lobby</span></div>
-      <button id="startBtn" type="button">Start</button>
+    <!-- ===== Top HUD (always visible) ===== -->
+    <header class="hud" aria-label="Top HUD">
+      <div class="hud-left">
+        <div class="hud-stat"><strong>Tick:</strong> <span id="tick">0</span></div>
+      </div>
 
-      <button id="resetBtn" type="button">Reset</button>
+      <div class="hud-right">
+        <button id="settingsToggle" class="hud-btn" type="button" aria-controls="settingsSidebar" aria-expanded="true">
+          Settings
+        </button>
+        <button id="startBtn" class="hud-btn" type="button">Start</button>
+        <button id="resetBtn" class="hud-btn" type="button">Reset</button>
+      </div>
     </header>
+    <!-- ===== Left settings sidebar (collapsible) ===== -->
+    <aside id="settingsSidebar" class="settings-sidebar" aria-label="Settings sidebar">
+      <div class="settings-scroll">
+        <section class="settings-section" aria-label="Health settings">
+          <h3>Health</h3>
+          <div id="settingsHealth" class="settings-group"></div>
+        </section>
+
+        <section class="settings-section" aria-label="Accessibility settings">
+          <h3>Accessibility</h3>
+          <div id="settingsAccessibility" class="settings-group"></div>
+        </section>
+
+        <section class="settings-section" aria-label="Tile indicator settings">
+          <h3>Tile Indicators</h3>
+          <div id="settingsIndicators" class="settings-group"></div>
+        </section>
+      </div>
+    </aside>
+
     <canvas id="game"></canvas>
 
     <!-- ===== Prayer UI (bottom-right) ===== -->

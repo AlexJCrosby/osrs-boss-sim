@@ -37,9 +37,46 @@ let tickerId = null; // will hold setInterval id
 // ===== DOM / HUD =====
 const canvas = document.getElementById("game");
 const tickEl = document.getElementById("tick");
-const targetEl = document.getElementById("target");
-const statusEl = document.getElementById("status");
 const startBtn = document.getElementById("startBtn");
+const resetBtn = document.getElementById("resetBtn");
+
+// Sidebar UI
+const settingsToggleBtn = document.getElementById("settingsToggle");
+const settingsHealthEl = document.getElementById("settingsHealth");
+const settingsAccessibilityEl = document.getElementById("settingsAccessibility");
+const settingsIndicatorsEl = document.getElementById("settingsIndicators");
+
+function setSidebarCollapsed(collapsed) {
+  document.body.classList.toggle("sidebar-collapsed", collapsed);
+  if (settingsToggleBtn) settingsToggleBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+}
+
+if (settingsToggleBtn) {
+  const stored = localStorage.getItem("settingsSidebarCollapsed");
+  setSidebarCollapsed(stored === "1");
+
+  settingsToggleBtn.addEventListener("click", () => {
+    const next = !document.body.classList.contains("sidebar-collapsed");
+    setSidebarCollapsed(next);
+    localStorage.setItem("settingsSidebarCollapsed", next ? "1" : "0");
+  });
+}
+
+function addSettingRow(parent, labelText, controls) {
+  const row = document.createElement("div");
+  row.className = "settings-row";
+
+  const label = document.createElement("div");
+  label.className = "row-label";
+  label.textContent = labelText;
+
+  const ctrl = document.createElement("div");
+  ctrl.className = "settings-controls";
+  controls.forEach((el) => ctrl.appendChild(el));
+
+  row.append(label, ctrl);
+  parent.appendChild(row);
+}
 
 // ===== Player: equipment + action timers =====
 const playerAction = {
@@ -63,7 +100,6 @@ function updateEquippedIndicator() {
   const w = playerAction.equippedWeapon;
   equippedIndicatorEl.textContent = `Equipped: ${w ? ITEM_DEFS[w]?.name ?? w : "None"}`;
 }
-
 
 // ===== Health UX controls (persisted) =====
 const hpLabel = document.createElement("span");
@@ -100,9 +136,11 @@ showBarToggle.checked = storedShowBar === null ? true : storedShowBar === "1";
 
 // Inject controls into the existing .hud (top bar)
 const hudEl = document.querySelector(".hud");
-hudEl.insertBefore(hpLabel, startBtn);
-hudEl.insertBefore(hpInput, startBtn);
-hudEl.insertBefore(barLabel, startBtn);
+// Inject controls into the LEFT sidebar
+if (settingsHealthEl) {
+  addSettingRow(settingsHealthEl, "Start HP", [hpInput]);
+  addSettingRow(settingsHealthEl, "Show HP bar", [showBarToggle]);
+}
 
 hpInput.addEventListener("change", () => {
   const v = Math.min(99, Math.max(10, Number(hpInput.value || 99)));
@@ -359,36 +397,14 @@ const SPLAT_RED_BG = splatSvgDataUri("#b40000", "#3b0000");
 const SPLAT_BLUE_BG = splatSvgDataUri("#1a52d6", "#0b1b4a");
 
 // ===== God mode (training mode) =====
-const godLabel = document.createElement("label");
-godLabel.className = "hint";
-godLabel.style.display = "inline-flex";
-godLabel.style.alignItems = "center";
-godLabel.style.gap = "6px";
-
 const godToggle = document.createElement("input");
 godToggle.type = "checkbox";
-
-const godText = document.createElement("span");
-godText.textContent = "God mode";
-
-godLabel.append(godToggle, godText);
 
 // Load persisted value
 const storedGodMode = localStorage.getItem("godMode");
 godToggle.checked = storedGodMode === "1";
 
-// Inject into HUD before Start button
-hudEl.insertBefore(godLabel, startBtn);
-
-godToggle.addEventListener("change", () => {
-  localStorage.setItem("godMode", godToggle.checked ? "1" : "0");
-});
-
 // ===== Slow-mo speed control (persisted) =====
-const speedLabel = document.createElement("span");
-speedLabel.className = "hint";
-speedLabel.textContent = "Speed:";
-
 const speedValue = document.createElement("span");
 speedValue.className = "hint";
 speedValue.style.minWidth = "52px";
@@ -398,7 +414,6 @@ speedSlider.type = "range";
 speedSlider.min = "25";
 speedSlider.max = "100";
 speedSlider.step = "5";
-speedSlider.style.width = "140px";
 
 const speedInput = document.createElement("input");
 speedInput.type = "number";
@@ -414,11 +429,12 @@ speedSlider.value = String(startSpeed);
 speedInput.value = String(startSpeed);
 speedValue.textContent = `${startSpeed}%`;
 
-// Insert into HUD before Start button
-hudEl.insertBefore(speedLabel, startBtn);
-hudEl.insertBefore(speedSlider, startBtn);
-hudEl.insertBefore(speedInput, startBtn);
-hudEl.insertBefore(speedValue, startBtn);
+// ===== Inject into LEFT sidebar (after everything is defined) =====
+if (settingsAccessibilityEl) {
+  addSettingRow(settingsAccessibilityEl, "God mode", [godToggle]);
+  addSettingRow(settingsAccessibilityEl, "Speed", [speedSlider, speedInput, speedValue]);
+}
+
 
 // ===== HUD helpers =====
 function clamp255(v) {
@@ -438,22 +454,10 @@ function normalizeHex(s) {
 
 
 // ===== Player Tile Indicator UI =====
-const ptiLabel = document.createElement("label");
-ptiLabel.className = "hint";
-ptiLabel.style.display = "inline-flex";
-ptiLabel.style.alignItems = "center";
-ptiLabel.style.gap = "6px";
-
 const ptiToggle = document.createElement("input");
 ptiToggle.type = "checkbox";
 ptiToggle.checked = (localStorage.getItem("ptiEnabled") ?? "1") === "1";
 
-const ptiToggleText = document.createElement("span");
-ptiToggleText.textContent = "Player tile";
-
-ptiLabel.append(ptiToggle, ptiToggleText);
-
-// Color inputs (swatch + hex)
 const ptiColor = document.createElement("input");
 ptiColor.type = "color";
 ptiColor.value = localStorage.getItem("ptiColor") || "#FFB03F";
@@ -464,7 +468,6 @@ ptiHex.value = ptiColor.value.toUpperCase();
 ptiHex.style.width = "90px";
 ptiHex.placeholder = "#RRGGBB";
 
-// Opacity (0..255 like RuneLite)
 const ptiOpacity = document.createElement("input");
 ptiOpacity.type = "range";
 ptiOpacity.min = "0";
@@ -479,14 +482,10 @@ ptiOpacityNum.step = "1";
 ptiOpacityNum.value = ptiOpacity.value;
 ptiOpacityNum.style.width = "64px";
 
-// Add to HUD (place before Start button so it’s visible)
-hudEl.insertBefore(ptiLabel, startBtn);
-hudEl.insertBefore(ptiColor, startBtn);
-hudEl.insertBefore(ptiHex, startBtn);
-hudEl.insertBefore(ptiOpacity, startBtn);
-hudEl.insertBefore(ptiOpacityNum, startBtn);
-
-
+// Inject ONLY player row here (TTI doesn't exist yet)
+if (settingsIndicatorsEl) {
+  addSettingRow(settingsIndicatorsEl, "Player tile", [ptiToggle, ptiColor, ptiHex, ptiOpacity, ptiOpacityNum]);
+}
 
 // !!! ===== Tornado Tile Indicator UI ===== !!! 
 const ttiLabel = document.createElement("label");
@@ -530,13 +529,10 @@ ttiOpacityNum.step = "1";
 ttiOpacityNum.value = ttiOpacity.value;
 ttiOpacityNum.style.width = "64px";
 
-// Add to HUD near the other indicator controls
-hudEl.insertBefore(ttiLabel, startBtn);
-hudEl.insertBefore(ttiColor, startBtn);
-hudEl.insertBefore(ttiHex, startBtn);
-hudEl.insertBefore(ttiOpacity, startBtn);
-hudEl.insertBefore(ttiOpacityNum, startBtn);
-
+// Inject Tornado row AFTER TTI controls exist
+if (settingsIndicatorsEl) {
+  addSettingRow(settingsIndicatorsEl, "Tornado tiles", [ttiToggle, ttiColor, ttiHex, ttiOpacity, ttiOpacityNum]);
+}
 
 function applyTTIUIToWorld() {
   const enabled = ttiToggle.checked;
@@ -789,9 +785,6 @@ function applyHit(hit) {
   }
 }
 
-
-statusEl.textContent = "Lobby"; // <-- moved here (after statusEl exists)
-
 speedSlider.addEventListener("input", () => applySpeedPercent(speedSlider.value));
 speedInput.addEventListener("change", () => applySpeedPercent(speedInput.value));
 
@@ -901,7 +894,7 @@ const boss = createBoss(THREE, {
 const targeting = createTargeting(THREE, {
   scene,
   canvas,
-  targetEl,
+  targetEl: null, // Target display removed from UI
   pickTileFromMouse: arena.pickTileFromMouse,
 });
 
@@ -1159,7 +1152,6 @@ function startFight() {
   player.setPos(5, 5);
 
   state = GameState.FIGHT;
-  statusEl.textContent = "Fight";
 
   startFightLoop();
 }
@@ -1170,7 +1162,6 @@ function reset() {
   stopFightLoop();
 
   state = GameState.LOBBY;
-  statusEl.textContent = "Lobby";
 
   tick = 0;
   tickEl.textContent = "0";
