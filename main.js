@@ -122,6 +122,17 @@ hpInput.max = "99";
 hpInput.step = "1";
 hpInput.style.width = "64px";
 
+// ===== Start fish (persisted) =====
+const fishInput = document.createElement("input");
+fishInput.type = "number";
+fishInput.min = "0";
+fishInput.max = "26";
+fishInput.step = "1";
+fishInput.style.width = "64px";
+
+const storedStartFish = Number(localStorage.getItem("startFish") || "10");
+fishInput.value = String(Math.min(26, Math.max(0, storedStartFish)));
+
 const barLabel = document.createElement("label");
 barLabel.className = "hint";
 barLabel.style.display = "inline-flex";
@@ -146,9 +157,25 @@ showBarToggle.checked = storedShowBar === null ? true : storedShowBar === "1";
 // Inject controls into the existing .hud (top bar)
 const hudEl = document.querySelector(".hud");
 
+// Load persisted (default 10)
+fishInput.value = String(Math.min(26, Math.max(0, storedStartFish)));
+
+fishInput.addEventListener("change", () => {
+  const v = Math.min(26, Math.max(0, Number(fishInput.value || 0)));
+  fishInput.value = String(v);
+  localStorage.setItem("startFish", String(v));
+
+  // Live update inventory while NOT in a fight
+  if (state !== GameState.FIGHT) {
+    seedStarterInventoryFromSettings();
+  }
+});
+
+
 // Inject controls into the LEFT sidebar
 if (settingsHealthEl) {
   addSettingRow(settingsHealthEl, "Start HP", [hpInput]);
+  addSettingRow(settingsHealthEl, "Start fish", [fishInput]);
   addSettingRow(settingsHealthEl, "Show HP bar", [showBarToggle]);
 }
 
@@ -301,14 +328,35 @@ if (invGridEl) {
   }
 }
 
-// ===== Inventory: seed + first render =====
-if (invGridEl) {
+function seedStarterInventory() {
+  const fishCount = Math.min(26, Math.max(0, Number(fishInput?.value || localStorage.getItem("startFish") || 10)));
+
   clearInventory();
   addItemToInventory("STAFF", 1);
   addItemToInventory("BOW", 1);
-  addItemToInventory("PADDLEFISH", 10);
+  addItemToInventory("PADDLEFISH", fishCount);
+
   renderInventory(invGridEl);
 }
+
+function seedStarterInventoryFromSettings() {
+  if (!invGridEl) return;
+
+  const fishCount = Math.min(26, Math.max(0, Number(fishInput?.value || 10)));
+
+  clearInventory();
+  addItemToInventory("STAFF", 1);
+  addItemToInventory("BOW", 1);
+  addItemToInventory("PADDLEFISH", fishCount);
+
+  renderInventory(invGridEl);
+}
+
+// ===== Inventory: seed + first render =====
+if (invGridEl) {
+  seedStarterInventoryFromSettings();
+}
+
 
 // ===== Inventory: click -> equip/eat =====
 if (invGridEl) {
@@ -368,17 +416,14 @@ if (invGridEl) {
     function resetInventoryToStarter() {
       if (!invGridEl) return;
 
-      clearInventory();
-      addItemToInventory("STAFF", 1);
-      addItemToInventory("BOW", 1);
-      addItemToInventory("PADDLEFISH", 10);
 
       // Reset equipment + timers too (optional but usually desired on reset)
       playerAction.equippedWeapon = null;
       playerAction.attackCd = 0;
       playerAction.eatCd = 0;
 
-      renderInventory(invGridEl);
+      seedStarterInventoryFromSettings();
+      // (keep any timer resets you already do)
     }
 
 // ===== Prayer UI wiring =====
@@ -1204,6 +1249,7 @@ requestAnimationFrame(animate);
 
 // ===== Game State =====
 function startFight() {
+  resetInventoryToStarter();
   targeting.clear();
 
   tick = 0;
