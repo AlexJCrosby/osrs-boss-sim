@@ -1357,7 +1357,7 @@ const ticker = createTicker({
           const dz = Math.abs(pz - bz);
           const dist = Math.max(dx, dz);
 
-          const MAX_ATTACK_RANGE = 8;
+          const MAX_ATTACK_RANGE = 15;
 
           if (dist <= MAX_ATTACK_RANGE) {
             const maxHit = 25;
