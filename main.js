@@ -716,37 +716,8 @@ function worldToScreen(x, y, z, camera, canvas) {
 
 // Active splats
 const hitSplats = [];
-function spawnHitSplat({ value, kind = "damage" }) {
-  const el = document.createElement("div");
-  el.className = "hitSplat";
 
-  const bg = document.createElement("div");
-  bg.className = "splatBg";
-  bg.style.backgroundImage = (kind === "splash") ? SPLAT_BLUE_BG : SPLAT_RED_BG;
-
-  const val = document.createElement("div");
-  val.className = "splatVal";
-  val.textContent = String(value);
-
-  el.append(bg, val);
-  hitSplatLayer.appendChild(el);
-
-  // World anchor: above player's head (using render coords)
-  const anchor = {
-    wx: player.renderX + 0.5,
-    wy: 1.35,
-    wz: player.renderY + 0.5,
-  };
-
-  hitSplats.push({
-    el,
-    anchor,
-    age: 0,
-    life: 0.75,
-    risePx: 28,
-  });
-}
-
+// ===== Hit splats: per-frame update =====
 function updateHitSplats(dt) {
   for (let i = hitSplats.length - 1; i >= 0; i--) {
     const s = hitSplats[i];
@@ -755,10 +726,14 @@ function updateHitSplats(dt) {
     const t = Math.min(1, s.age / s.life);
     const alpha = 1 - t;
 
-    const screen = worldToScreen(s.anchor.wx, s.anchor.wy, s.anchor.wz, camera, canvas);
-    if (!screen.onScreen) {
-      // still keep it; it will be removed by lifetime
-    }
+    // Convert world anchor -> screen coords
+    const screen = worldToScreen(
+      s.anchor.wx,
+      s.anchor.wy,
+      s.anchor.wz,
+      camera,
+      canvas
+    );
 
     // Rise up a bit + fade out
     const y = screen.y - (t * s.risePx);
@@ -773,6 +748,65 @@ function updateHitSplats(dt) {
     }
   }
 }
+
+/**
+ * Spawn a hitsplat at a specific world anchor.
+ * anchorWorld: { wx, wy, wz } in world units
+ * kind: "damage" | "splash"
+ */
+function spawnHitSplatAt({ value, kind = "damage", anchorWorld }) {
+  const el = document.createElement("div");
+  el.className = "hitSplat";
+
+  const bg = document.createElement("div");
+  bg.className = "splatBg";
+  bg.style.backgroundImage = (kind === "splash") ? SPLAT_BLUE_BG : SPLAT_RED_BG;
+
+  const val = document.createElement("div");
+  val.className = "splatVal";
+  val.textContent = String(value);
+
+  el.append(bg, val);
+  hitSplatLayer.appendChild(el);
+
+  hitSplats.push({
+    el,
+    anchor: {
+      wx: anchorWorld.wx,
+      wy: anchorWorld.wy,
+      wz: anchorWorld.wz,
+    },
+    age: 0,
+    life: 0.75,
+    risePx: 28,
+  });
+}
+
+/**
+ * Backwards-compatible helper: spawn above player (existing behaviour)
+ */
+function spawnHitSplat({ value, kind = "damage" }) {
+  const anchor = {
+    wx: player.renderX + 0.5,
+    wy: 1.35,
+    wz: player.renderY + 0.5,
+  };
+  spawnHitSplatAt({ value, kind, anchorWorld: anchor });
+}
+
+/**
+ * Boss helper: spawn above boss mesh
+ */
+function spawnBossHitSplat({ value, kind = "damage" }) {
+  // IMPORTANT: mesh.position may be LOCAL (if mesh is parented).
+  // getWorldPosition() returns WORLD space, which matches worldToScreen().
+  const wp = new THREE.Vector3();
+  boss.mesh.getWorldPosition(wp);
+
+  const anchor = { wx: wp.x, wy: wp.y + 1.2, wz: wp.z }; // bump height as needed
+  spawnHitSplatAt({ value, kind, anchorWorld: anchor });
+}
+
 
 // ===== Speed control =====
 function applySpeedPercent(pct) {
@@ -796,6 +830,34 @@ function applySpeedPercent(pct) {
 let maxHP = Number(hpInput.value);
 let currentHP = maxHP;
 let godMode = godToggle.checked;
+
+// ===== Boss HP =====
+let bossMaxHP = 1000;
+let bossHP = bossMaxHP;
+
+function resetBossHP() {
+  bossMaxHP = 1000;
+  bossHP = bossMaxHP;
+}
+
+function applyBossHit({ amount }) {
+  const raw = Number(amount);
+  if (!Number.isFinite(raw)) return;
+
+  // Clamp into [0..] so we can display "splash" hits too
+  const dmg = Math.max(0, Math.floor(raw));
+
+  // Reduce boss HP only if dmg > 0
+  if (dmg > 0) {
+    bossHP = Math.max(0, bossHP - dmg);
+  }
+
+  // Spawn splat regardless (0 => splash)
+  spawnBossHitSplat({ value: dmg, kind: dmg === 0 ? "splash" : "damage" });
+
+  console.log(`[BOSS HIT] -${dmg} (bossHP ${bossHP}/${bossMaxHP})`);
+}
+
 
 godToggle.addEventListener("change", () => {
   godMode = godToggle.checked;
@@ -1196,7 +1258,48 @@ const ticker = createTicker({
 
     // Boss: update once per fight tick
     boss.update(tick);
+        // ===== Player attacks boss (MVP functional stub) =====
+    // Requirements:
+    // - Must have staff/bow equipped
+    // - Uses existing attackCd timer
+    // - Clicking boss sets wantsToAttackBoss=true (already implemented)
+    if (playerCombat.wantsToAttackBoss) {
+      const weapon = playerAction.equippedWeapon; // "STAFF" | "BOW" | null
+      const canAttack = (playerAction.attackCd === 0) && (weapon === "STAFF" || weapon === "BOW");
 
+      if (canAttack) {
+        const style = (weapon === "STAFF") ? "MAGE" : "RANGE";
+
+        // Simple range check (Chebyshev distance in world space)
+        const px = player.x + 0.5;
+        const pz = player.y + 0.5;
+        const bx = boss.mesh.position.x;
+        const bz = boss.mesh.position.z;
+
+        const dx = Math.abs(px - bx);
+        const dz = Math.abs(pz - bz);
+        const dist = Math.max(dx, dz);
+
+        const MAX_ATTACK_RANGE = 8; // tweak later
+
+        if (dist <= MAX_ATTACK_RANGE) {
+          // Simple damage roll (includes 0 so you can support "off-prayer count" later)
+          const maxHit = 25; // tweak later per weapon
+          const dmg = Math.floor(Math.random() * (maxHit + 1)); // 0..maxHit
+
+          applyBossHit({ amount: dmg });
+
+          // Put the weapon on cooldown
+          playerAction.attackCd = playerCombat.weaponSpeed; // already 4 in your state
+
+          // Optional: keep attacking after click (true OSRS behaviour for your sim)
+          // If you want "single shot per click", set wantsToAttackBoss = false here.
+        } else {
+          // Out of range: do nothing for now (later you can path toward boss edge)
+          // console.log("Boss out of range:", dist);
+        }
+      }
+    }
 
     if (pendingDamageThisTick > 0) {
       spawnHitSplat({ value: pendingDamageThisTick, kind: "damage" });
@@ -1240,7 +1343,6 @@ function animate(now) {
   cameraCtl.update(dt);
   updateHitSplats(dt);
 
-
   renderer.render(scene, camera);
   
   requestAnimationFrame(animate);
@@ -1249,6 +1351,7 @@ requestAnimationFrame(animate);
 
 // ===== Game State =====
 function startFight() {
+  resetBossHP();
   resetInventoryToStarter();
   targeting.clear();
 
@@ -1290,6 +1393,8 @@ function reset() {
   tornadoes.reset();
   boss.resetCombat();
   projectiles.reset();
+  resetBossHP();
+
 
   // On reset, go back to full HP of the chosen start value
   maxHP = Math.min(99, Math.max(10, Number(hpInput.value || 99)));
