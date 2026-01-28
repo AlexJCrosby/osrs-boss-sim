@@ -67,14 +67,19 @@ export function renderInventory(invGridEl) {
       continue;
     }
 
-    const def = ITEM_DEFS[stack.id];
+        const def = ITEM_DEFS[stack.id];
     const icon = def?.icon ?? "📦";
     const name = def?.name ?? stack.id;
 
+    // Tooltip text
+    const tooltip =
+      def?.type === "FOOD" && typeof def.heal === "number"
+        ? `${name} +${def.heal} HP`
+        : `${name}`;
+
     el.innerHTML = `
-      <div class="inv-item" data-item="${stack.id}">
+      <div class="inv-item" data-item="${stack.id}" title="${tooltip}">
         <div class="inv-item-icon">${icon}</div>
-        <div class="inv-item-name">${name}</div>
         ${stack.qty > 1 ? `<div class="inv-item-qty">${stack.qty}</div>` : ""}
       </div>
     `;

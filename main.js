@@ -110,14 +110,6 @@ const playerCombat = {
   weaponSpeed: 4,
 };
 
-// Update the little UI line in the inventory tab
-const equippedIndicatorEl = document.getElementById("equippedIndicator");
-function updateEquippedIndicator() {
-  if (!equippedIndicatorEl) return;
-  const w = playerAction.equippedWeapon;
-  equippedIndicatorEl.textContent = `Equipped: ${w ? ITEM_DEFS[w]?.name ?? w : "None"}`;
-}
-
 // ===== Health UX controls (persisted) =====
 const hpLabel = document.createElement("span");
 hpLabel.className = "hint";
@@ -334,7 +326,6 @@ if (invGridEl) {
     // Equip weapon
     if (def.type === "WEAPON") {
       playerAction.equippedWeapon = stack.id; // "STAFF" or "BOW"
-      updateEquippedIndicator();
       console.log("Equipped weapon:", stack.id);
       return;
     }
@@ -388,7 +379,6 @@ if (invGridEl) {
       playerAction.eatCd = 0;
 
       renderInventory(invGridEl);
-      updateEquippedIndicator();
     }
 
 // ===== Prayer UI wiring =====

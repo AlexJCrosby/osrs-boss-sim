@@ -466,9 +466,31 @@ body.sidebar-open .settings-tab-handle::before {
 }
 
 .inv-slot {
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(0,0,0,0.25);
-  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.inv-item {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.inv-item-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.inv-item-qty {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffd55a;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.9);
 }
 
 /* ===== Equipped weapon indicator ===== */
