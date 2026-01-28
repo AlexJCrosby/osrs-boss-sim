@@ -40,6 +40,43 @@ const tickEl = document.getElementById("tick");
 const startBtn = document.getElementById("startBtn");
 const resetBtn = document.getElementById("resetBtn");
 
+// ===== Boss HP Bar (overlay, NOT part of HUD) =====
+const bossBar = document.createElement("div");
+bossBar.className = "bossTopBar hidden";
+
+const bossNameEl = document.createElement("div");
+bossNameEl.className = "bossName";
+bossNameEl.textContent = "Corrupted Hunllef";
+
+const bossHpOuter = document.createElement("div");
+bossHpOuter.className = "bossHpOuter";
+
+const bossHpFill = document.createElement("div");
+bossHpFill.className = "bossHpFill";
+
+const bossHpText = document.createElement("div");
+bossHpText.className = "bossHpText";
+bossHpText.textContent = "1000 / 1000";
+
+bossHpOuter.appendChild(bossHpFill);
+bossHpOuter.appendChild(bossHpText);
+
+bossBar.appendChild(bossNameEl);
+bossBar.appendChild(bossHpOuter);
+
+document.body.appendChild(bossBar);
+
+function setBossBarVisible(isVisible) {
+  bossBar.classList.toggle("hidden", !isVisible);
+}
+
+function updateBossBarUI() {
+  const pct = bossMaxHP > 0 ? Math.max(0, bossHP / bossMaxHP) : 0;
+  bossHpFill.style.width = `${pct * 100}%`;
+  bossHpText.textContent = `${bossHP} / ${bossMaxHP}`;
+}
+
+
 // Sidebar containers
 const settingsHealthEl = document.getElementById("settingsHealth");
 const settingsAccessibilityEl = document.getElementById("settingsAccessibility");
@@ -374,6 +411,7 @@ if (invGridEl) {
     // Equip weapon
     if (def.type === "WEAPON") {
       playerAction.equippedWeapon = stack.id; // "STAFF" or "BOW"
+      cancelPlayerAttack("equipped weapon");
       console.log("Equipped weapon:", stack.id);
       return;
     }
@@ -402,7 +440,8 @@ if (invGridEl) {
       // 4) timers: eat cd + attack delay
       playerAction.eatCd = 3;
       playerAction.attackCd += 3; // adds 3 ticks on top of whatever is left
-
+      cancelPlayerAttack("ate food");
+      
       // 5) re-render inventory
       renderInventory(invGridEl);
 
@@ -838,6 +877,8 @@ let bossHP = bossMaxHP;
 function resetBossHP() {
   bossMaxHP = 1000;
   bossHP = bossMaxHP;
+  updateBossBarUI();
+
 }
 
 function applyBossHit({ amount }) {
@@ -852,6 +893,7 @@ function applyBossHit({ amount }) {
     bossHP = Math.max(0, bossHP - dmg);
   }
 
+  updateBossBarUI();
   // Spawn splat regardless (0 => splash)
   spawnBossHitSplat({ value: dmg, kind: dmg === 0 ? "splash" : "damage" });
 
@@ -1168,16 +1210,31 @@ let tick = 0;
 // ===== Tick damage aggregation (hit splats) =====
 let pendingDamageThisTick = 0;
 
+function cancelPlayerAttack(reason = "") {
+  if (playerCombat.wantsToAttackBoss) {
+    console.log("[ATTACK CANCELLED]", reason);
+  }
+  playerCombat.wantsToAttackBoss = false;
+  playerCombat.attackStalled = true;
+}
 
 function onBossClicked() {
-  // Rule: attempting to attack ALWAYS stops movement
-  targeting.clear();
-
+  // Clicking boss = explicit re-arm to attack
+  targeting.clear(); // stops movement
   playerCombat.wantsToAttackBoss = true;
   playerCombat.attackStalled = false;
 
-  console.log("Boss clicked: attack attempt");
+  console.log("[ATTACK ARMED] Boss clicked");
 }
+
+// ===== Ground click cancels attacking (but boss-click does NOT reach here because it stops propagation) =====
+canvas.addEventListener("mousedown", (e) => {
+  if (e.button !== 0) return;
+  if (state !== GameState.FIGHT) return;
+
+  // If it's not a boss click (boss click listener stops propagation), treat it as movement intent.
+  cancelPlayerAttack("ground click / movement intent");
+});
 
 function applyPTIUIToWorld() {
   const enabled = ptiToggle.checked;
@@ -1233,15 +1290,27 @@ const ticker = createTicker({
   baseTickMs: TICK_MS,
   onTick: () => {
     if (state !== GameState.FIGHT) return;
-    
+
     tick++;
     tickEl.textContent = String(tick);
+
     // ===== Player action timers: tick down =====
     playerAction.attackCd = Math.max(0, playerAction.attackCd - 1);
     playerAction.eatCd = Math.max(0, playerAction.eatCd - 1);
 
+    // ===== Movement (detect if we moved this tick) =====
+    const prevX = player.x;
+    const prevY = player.y;
+
     player.stepToward(targeting.target, PLAYER_SPEED_TILES_PER_TICK, GRID_W, GRID_H);
 
+    const movedThisTick = (player.x !== prevX) || (player.y !== prevY);
+    if (movedThisTick) {
+      // Any movement cancels attacking and prevents auto-resume
+      cancelPlayerAttack("moved this tick");
+    }
+
+    // Clear targeting once we arrive
     if (targeting.target && player.x === targeting.target.x && player.y === targeting.target.y) {
       targeting.clear();
     }
@@ -1249,63 +1318,65 @@ const ticker = createTicker({
     // Sync player tile indicator to player position
     player.syncTileIndicator();
 
-    // Danger floor: update + render once per fight tick
+    // ===== Environment systems =====
     dangerFloor.update(tick);
     dangerFloor.render();
 
-    // Tornadoes: update once per fight tick
     tornadoes.update(tick);
 
     // Boss: update once per fight tick
     boss.update(tick);
-        // ===== Player attacks boss (MVP functional stub) =====
-    // Requirements:
-    // - Must have staff/bow equipped
-    // - Uses existing attackCd timer
-    // - Clicking boss sets wantsToAttackBoss=true (already implemented)
+
+    // ===== Player attacks boss =====
+    // Rules:
+    // - Must have explicitly clicked boss (wantsToAttackBoss === true)
+    // - Must NOT be moving / have a movement target
+    // - Must have a staff/bow equipped
+    // - Must be off cooldown
     if (playerCombat.wantsToAttackBoss) {
-      const weapon = playerAction.equippedWeapon; // "STAFF" | "BOW" | null
-      const canAttack = (playerAction.attackCd === 0) && (weapon === "STAFF" || weapon === "BOW");
+      // If player is currently pathing / has a movement intent, do not attack
+      // (Movement click already cancels attack; this is a safety gate.)
+      if (targeting.target) {
+        // Do nothing this tick
+      } else {
+        const weapon = playerAction.equippedWeapon; // "STAFF" | "BOW" | null
+        const canAttack =
+          (playerAction.attackCd === 0) &&
+          (weapon === "STAFF" || weapon === "BOW");
 
-      if (canAttack) {
-        const style = (weapon === "STAFF") ? "MAGE" : "RANGE";
+        if (canAttack) {
+          // const style = (weapon === "STAFF") ? "MAGE" : "RANGE";
 
-        // Simple range check (Chebyshev distance in world space)
-        const px = player.x + 0.5;
-        const pz = player.y + 0.5;
-        const bx = boss.mesh.position.x;
-        const bz = boss.mesh.position.z;
+          // Simple range check (Chebyshev distance in world space)
+          const px = player.x + 0.5;
+          const pz = player.y + 0.5;
+          const bx = boss.mesh.position.x;
+          const bz = boss.mesh.position.z;
 
-        const dx = Math.abs(px - bx);
-        const dz = Math.abs(pz - bz);
-        const dist = Math.max(dx, dz);
+          const dx = Math.abs(px - bx);
+          const dz = Math.abs(pz - bz);
+          const dist = Math.max(dx, dz);
 
-        const MAX_ATTACK_RANGE = 8; // tweak later
+          const MAX_ATTACK_RANGE = 8;
 
-        if (dist <= MAX_ATTACK_RANGE) {
-          // Simple damage roll (includes 0 so you can support "off-prayer count" later)
-          const maxHit = 25; // tweak later per weapon
-          const dmg = Math.floor(Math.random() * (maxHit + 1)); // 0..maxHit
+          if (dist <= MAX_ATTACK_RANGE) {
+            const maxHit = 25;
+            const dmg = Math.floor(Math.random() * (maxHit + 1)); // 0..maxHit
 
-          applyBossHit({ amount: dmg });
+            applyBossHit({ amount: dmg });
 
-          // Put the weapon on cooldown
-          playerAction.attackCd = playerCombat.weaponSpeed; // already 4 in your state
-
-          // Optional: keep attacking after click (true OSRS behaviour for your sim)
-          // If you want "single shot per click", set wantsToAttackBoss = false here.
-        } else {
-          // Out of range: do nothing for now (later you can path toward boss edge)
-          // console.log("Boss out of range:", dist);
+            // Put the weapon on cooldown
+            playerAction.attackCd = playerCombat.weaponSpeed;
+          }
         }
       }
     }
 
+    // ===== Player damage hitsplat (existing behaviour) =====
     if (pendingDamageThisTick > 0) {
       spawnHitSplat({ value: pendingDamageThisTick, kind: "damage" });
       pendingDamageThisTick = 0;
     }
-
   },
 });
 
@@ -1357,6 +1428,8 @@ function startFight() {
 
   tick = 0;
 
+  setBossBarVisible(true);
+  updateBossBarUI();
   boss.resetCombat();
   dangerFloor.reset();
   tornadoes.reset();
@@ -1394,6 +1467,7 @@ function reset() {
   boss.resetCombat();
   projectiles.reset();
   resetBossHP();
+  setBossBarVisible(false);
 
 
   // On reset, go back to full HP of the chosen start value
