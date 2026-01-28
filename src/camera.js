@@ -65,10 +65,18 @@ export function createOrbitCameraController(THREE, { canvas, camera, getFocus })
   }
 
   function update(dt) {
-    if (keys.has("d")) orbitYaw += YAW_SPEED * dt;
-    if (keys.has("a")) orbitYaw -= YAW_SPEED * dt;
-    if (keys.has("s")) orbitPitch -= PITCH_SPEED * dt;
-    if (keys.has("w")) orbitPitch += PITCH_SPEED * dt;
+    // Yaw (left/right)
+    const yawRight = keys.has("d") || keys.has("arrowright");
+    const yawLeft  = keys.has("a") || keys.has("arrowleft");
+    if (yawRight) orbitYaw += YAW_SPEED * dt;
+    if (yawLeft)  orbitYaw -= YAW_SPEED * dt;
+
+    // Pitch (up/down)
+    const pitchDown = keys.has("s") || keys.has("arrowdown");
+    const pitchUp   = keys.has("w") || keys.has("arrowup");
+    if (pitchDown) orbitPitch -= PITCH_SPEED * dt;
+    if (pitchUp)   orbitPitch += PITCH_SPEED * dt;
+
     orbitPitch = clamp(orbitPitch, MIN_PITCH, MAX_PITCH);
 
     // Raw focus (player's smooth render position should be coming from getFocus())
@@ -95,7 +103,7 @@ export function createOrbitCameraController(THREE, { canvas, camera, getFocus })
 
     camera.position.set(x, y, z);
     camera.lookAt(focus);
-  }
-
+    }
+    
   return { update, attachZoomWheel };
 }
