@@ -40,28 +40,12 @@ const tickEl = document.getElementById("tick");
 const startBtn = document.getElementById("startBtn");
 const resetBtn = document.getElementById("resetBtn");
 
-// Sidebar UI
-const settingsToggleBtn = document.getElementById("settingsToggle");
+// Sidebar containers
 const settingsHealthEl = document.getElementById("settingsHealth");
 const settingsAccessibilityEl = document.getElementById("settingsAccessibility");
 const settingsIndicatorsEl = document.getElementById("settingsIndicators");
 
-function setSidebarCollapsed(collapsed) {
-  document.body.classList.toggle("sidebar-collapsed", collapsed);
-  if (settingsToggleBtn) settingsToggleBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
-}
-
-if (settingsToggleBtn) {
-  const stored = localStorage.getItem("settingsSidebarCollapsed");
-  setSidebarCollapsed(stored === "1");
-
-  settingsToggleBtn.addEventListener("click", () => {
-    const next = !document.body.classList.contains("sidebar-collapsed");
-    setSidebarCollapsed(next);
-    localStorage.setItem("settingsSidebarCollapsed", next ? "1" : "0");
-  });
-}
-
+// ===== Sidebar helpers =====
 function addSettingRow(parent, labelText, controls) {
   const row = document.createElement("div");
   row.className = "settings-row";
@@ -76,6 +60,25 @@ function addSettingRow(parent, labelText, controls) {
 
   row.append(label, ctrl);
   parent.appendChild(row);
+}
+
+function setSidebarOpen(open) {
+  document.body.classList.toggle("sidebar-open", open);
+  if (settingsTabHandle) {
+    settingsTabHandle.setAttribute("aria-expanded", open ? "true" : "false");
+    settingsTabHandle.setAttribute("aria-label", open ? "Close settings" : "Open settings");
+  }
+  localStorage.setItem("settingsSidebarOpen", open ? "1" : "0");
+}
+
+if (settingsTabHandle) {
+  const stored = localStorage.getItem("settingsSidebarOpen");
+  setSidebarOpen(stored === "1");
+
+  settingsTabHandle.addEventListener("click", () => {
+    const isOpen = document.body.classList.contains("sidebar-open");
+    setSidebarOpen(!isOpen);
+  });
 }
 
 // ===== Player: equipment + action timers =====
@@ -136,6 +139,7 @@ showBarToggle.checked = storedShowBar === null ? true : storedShowBar === "1";
 
 // Inject controls into the existing .hud (top bar)
 const hudEl = document.querySelector(".hud");
+
 // Inject controls into the LEFT sidebar
 if (settingsHealthEl) {
   addSettingRow(settingsHealthEl, "Start HP", [hpInput]);
@@ -405,9 +409,7 @@ const storedGodMode = localStorage.getItem("godMode");
 godToggle.checked = storedGodMode === "1";
 
 // ===== Slow-mo speed control (persisted) =====
-const speedValue = document.createElement("span");
-speedValue.className = "hint";
-speedValue.style.minWidth = "52px";
+
 
 const speedSlider = document.createElement("input");
 speedSlider.type = "range";
@@ -422,17 +424,21 @@ speedInput.max = "100";
 speedInput.step = "5";
 speedInput.style.width = "64px";
 
+const speedInputWrap = document.createElement("div");
+speedInputWrap.className = "num-suffix";
+speedInputWrap.appendChild(speedInput);
+
 // Load persisted
 const storedSpeed = Number(localStorage.getItem("simSpeedPct") || "100");
 const startSpeed = Math.min(100, Math.max(25, storedSpeed));
 speedSlider.value = String(startSpeed);
 speedInput.value = String(startSpeed);
-speedValue.textContent = `${startSpeed}%`;
+
 
 // ===== Inject into LEFT sidebar (after everything is defined) =====
 if (settingsAccessibilityEl) {
   addSettingRow(settingsAccessibilityEl, "God mode", [godToggle]);
-  addSettingRow(settingsAccessibilityEl, "Speed", [speedSlider, speedInput, speedValue]);
+  addSettingRow(settingsAccessibilityEl, "Speed", [speedSlider, speedInputWrap]);
 }
 
 
@@ -658,7 +664,6 @@ function applySpeedPercent(pct) {
 
   speedSlider.value = String(p);
   speedInput.value = String(p);
-  speedValue.textContent = `${p}%`;
   localStorage.setItem("simSpeedPct", String(p));
 
   // 600ms base tick at 100%
@@ -670,7 +675,6 @@ function applySpeedPercent(pct) {
   player.setTickSeconds(tickSec);
   tornadoes.setTickSeconds(tickSec);
 }
-
 
 // Real HP state (replaces playerHP)
 let maxHP = Number(hpInput.value);

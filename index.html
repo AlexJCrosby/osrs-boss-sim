@@ -15,15 +15,21 @@
       <div class="hud-left">
         <div class="hud-stat"><strong>Tick:</strong> <span id="tick">0</span></div>
       </div>
-
       <div class="hud-right">
-        <button id="settingsToggle" class="hud-btn" type="button" aria-controls="settingsSidebar" aria-expanded="true">
-          Settings
         </button>
         <button id="startBtn" class="hud-btn" type="button">Start</button>
         <button id="resetBtn" class="hud-btn" type="button">Reset</button>
       </div>
     </header>
+    <button id="settingsTabHandle"
+        class="settings-tab-handle"
+        type="button"
+        aria-controls="settingsSidebar"
+        aria-expanded="false"
+        aria-label="Open settings">
+      ☰
+    </button>
+
     <!-- ===== Left settings sidebar (collapsible) ===== -->
     <aside id="settingsSidebar" class="settings-sidebar" aria-label="Settings sidebar">
       <div class="settings-scroll">

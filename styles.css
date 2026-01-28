@@ -1,9 +1,6 @@
 :root {
-  --hudH: 48px; /* adjust if your header is taller */
+  --hudH: 55px; /* adjust if your header is taller */
   color-scheme: dark light;
-}
-
-:root {
   --sidebarW: 320px;
   --sidebarCollapsedW: 56px;
   --sidebarWCurrent: var(--sidebarW);
@@ -74,31 +71,35 @@ canvas#game {
 }
 
 
-/* ===== Left settings sidebar ===== */
-/* ===== Left settings sidebar (OVERLAY, does not resize canvas) ===== */
+/* ===== Left settings sidebar (overlay drawer) ===== */
 .settings-sidebar {
-  pointer-events: auto;
   position: fixed;
   left: 0;
   top: var(--hudH);
-  width: 320px;
+  width: var(--sidebarW);
   height: calc(100vh - var(--hudH));
   z-index: 50;
+  overflow-x: hidden; /* belt + braces */
+
 
   background: rgba(16, 19, 26, 0.94);
   border-right: 1px solid #222734;
-
-  /* Overlay behavior */
-  transform: translateX(0);
-  transition: transform 160ms ease;
   box-shadow: 0 0 24px rgba(0,0,0,0.35);
+
+  transform: translateX(-100%);   /* fully hidden by default */
+  transition: transform 160ms ease;
 }
 
-
+/* Open state */
+body.sidebar-open .settings-sidebar {
+  transform: translateX(0);
+}
 .settings-scroll {
   height: 100%;
   overflow: auto;
   padding: 12px 12px 24px;
+  overflow-y: auto;
+  overflow-x: hidden; /* <-- key */
 }
 
 .settings-section {
@@ -117,49 +118,144 @@ canvas#game {
   color: rgba(255,255,255,0.75);
 }
 
+.settings-group {
+  display: grid;
+  gap: 10px; /* more breathing room */
+}
+
 .settings-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 140px minmax(0, 1fr); /* minmax(0,1fr) prevents overflow */
   gap: 12px;
   align-items: center;
-  padding: 8px 6px;
-  border-radius: 10px;
+
+  padding: 10px 10px;
+  border-radius: 12px;
+  min-width: 0; /* important for grid overflow behavior */
 }
 
 .settings-row:hover {
   background: rgba(255,255,255,0.04);
 }
 
-.settings-controls input[type="range"] { width: 150px; }
-.settings-sidebar input[type="number"] { width: 72px; }
-.settings-sidebar input[type="text"] { width: 96px; }
-
-/* Collapsed: hide labels/sections, keep the sidebar narrow */
-body.sidebar-collapsed .settings-sidebar {
-  transform: translateX(calc(-320px + 56px)); /* leave a small handle visible */
+.settings-row .row-label {
+  color: rgba(255,255,255,0.70);
+  font-size: 13px;
 }
 
-.settings-sidebar::after {
+.settings-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end; /* keeps things aligned to the right nicely */
+  min-width: 0;             /* allows children to shrink instead of overflow */
+}
+
+.settings-controls > * {
+  min-width: 0; /* allows inputs to shrink */
+}
+
+
+/* Bigger checkboxes */
+.settings-sidebar input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  transform: scale(1.15);
+  transform-origin: left center;
+}
+
+/* Make color picker square, not a weird rectangle */
+.settings-sidebar input[type="color"] {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid #2a3142;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* Consistent sizes */
+.settings-sidebar input[type="text"] { width: 96px; }
+.settings-sidebar input[type="number"] { width: 76px; }
+.settings-sidebar input[type="range"] { width: 170px; }
+
+
+/* ===== Sidebar tab handle ===== */
+.settings-tab-handle {
+  cursor: pointer;
+  position: fixed;
+  left: 0;
+  top: calc(var(--hudH) + 16px);
+  z-index: 60;
+
+  width: 44px;
+  height: 44px;
+
+  border: 1px solid #2a3142;
+  border-left: none;
+  border-radius: 0 12px 12px 0;
+
+  background: rgba(16, 19, 26, 0.92);
+  color: rgba(255,255,255,0.85);
+
+  display: grid;
+  place-items: center;
+
+  cursor: pointer;
+  box-shadow: 0 10px 18px rgba(0,0,0,0.25);
+
+  transition: left 160ms ease, background 160ms ease;
+}
+
+.settings-tab-handle:hover {
+  background: rgba(22, 26, 36, 0.96);
+}
+
+/* When drawer is open, move handle to the drawer’s right edge */
+body.sidebar-open .settings-tab-handle {
+  left: var(--sidebarW);
+}
+
+/* Optional: make it look “attached” by rounding the opposite corners */
+body.sidebar-open .settings-tab-handle::before {
   content: "";
   position: absolute;
-  top: 0;
-  right: -10px;
-  width: 10px;
-  height: 100%;
+  left: -1px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: #2a3142; /* seam line */
 }
+
 
 /* ===== Health UI (orb + bar) ===== */
 .healthHud {
   position: fixed;
-  left: 14px;
-  bottom: 14px;
+  right: 30px;
+  top: 280px;
   z-index: 20;
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
+  width: 120px;   /* just a small anchor area */
+  height: 120px;  /* enough space for orb */
   user-select: none;
-  pointer-events: none; /* UI is display-only (controls are in top HUD) */
+  pointer-events: none;
 }
+
+/* Orb stays fixed in place */
+.hpOrb {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+/* Bar has its own fixed position */
+.hpBar {
+  position: absolute;
+  left: 80px;   /* place it to the left of orb (tweak as you like) */
+  bottom: 55px;      /* align vertically with orb */
+}
+
 
 /* Orb wrapper */
 .hpOrb {
@@ -384,4 +480,24 @@ body.sidebar-collapsed .settings-sidebar {
   border-radius: 10px;
   font-size: 13px;
   font-weight: 700;
+}
+
+/* Number input suffix (e.g. %) */
+.num-suffix {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.num-suffix input {
+  padding-right: 22px; /* room for suffix */
+}
+
+.num-suffix::after {
+  content: "%";
+  position: absolute;
+  right: 10px;
+  color: rgba(255,255,255,0.55);
+  font-size: 12px;
+  pointer-events: none;
 }
