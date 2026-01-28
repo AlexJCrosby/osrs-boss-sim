@@ -44,6 +44,20 @@ const resetBtn = document.getElementById("resetBtn");
 const settingsHealthEl = document.getElementById("settingsHealth");
 const settingsAccessibilityEl = document.getElementById("settingsAccessibility");
 const settingsIndicatorsEl = document.getElementById("settingsIndicators");
+const settingsKeybindsEl = document.getElementById("settingsKeybinds");
+
+
+// ===== Keybinds (persisted) =====
+function normalizeKeyForBind(k) {
+  if (!k) return "";
+  // Keep arrows readable, normalize everything to lowercase
+  return String(k).toLowerCase();
+}
+
+const keybinds = {
+  prayer: normalizeKeyForBind(localStorage.getItem("kb_openPrayer") || "3"),
+  inventory: normalizeKeyForBind(localStorage.getItem("kb_openInventory") || "2"),
+};
 
 // ===== Sidebar helpers =====
 function addSettingRow(parent, labelText, controls) {
@@ -250,6 +264,31 @@ function setActiveSideTab(tabName) {
   }
 }
 
+// ===== Global keybind handling for side tabs =====
+window.addEventListener("keydown", (e) => {
+  if (e.repeat) return;
+
+  // Don't trigger while typing in inputs/textareas/contenteditable
+  const t = e.target;
+  const typing =
+    t &&
+    (t.tagName === "INPUT" ||
+      t.tagName === "TEXTAREA" ||
+      t.isContentEditable);
+
+  if (typing) return;
+
+  const k = normalizeKeyForBind(e.key);
+
+  if (k === keybinds.inventory) {
+    setActiveSideTab("inventory");
+    e.preventDefault();
+  } else if (k === keybinds.prayer) {
+    setActiveSideTab("prayer");
+    e.preventDefault();
+  }
+});
+
 // Click handlers
 if (tabPrayerBtn) tabPrayerBtn.addEventListener("click", () => setActiveSideTab("prayer"));
 if (tabInventoryBtn) tabInventoryBtn.addEventListener("click", () => setActiveSideTab("inventory"));
@@ -439,6 +478,48 @@ speedInput.value = String(startSpeed);
 if (settingsAccessibilityEl) {
   addSettingRow(settingsAccessibilityEl, "God mode", [godToggle]);
   addSettingRow(settingsAccessibilityEl, "Speed", [speedSlider, speedInputWrap]);
+}
+
+// ----- Keybind inputs -----
+const kbPrayer = document.createElement("input");
+kbPrayer.type = "text";
+kbPrayer.maxLength = 16;
+kbPrayer.value = keybinds.prayer;
+kbPrayer.style.width = "96px";
+
+const kbInventory = document.createElement("input");
+kbInventory.type = "text";
+kbInventory.maxLength = 16;
+kbInventory.value = keybinds.inventory;
+kbInventory.style.width = "96px";
+
+function bindKeyInput(inputEl, which) {
+  inputEl.addEventListener("keydown", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const k = normalizeKeyForBind(e.key);
+    if (!k) return;
+
+    // Optional: block modifier-only keys
+    if (k === "shift" || k === "control" || k === "alt" || k === "meta") return;
+
+    keybinds[which] = k;
+    inputEl.value = k;
+
+    if (which === "prayer") localStorage.setItem("kb_openPrayer", k);
+    if (which === "inventory") localStorage.setItem("kb_openInventory", k);
+
+    inputEl.blur();
+  });
+}
+
+bindKeyInput(kbPrayer, "prayer");
+bindKeyInput(kbInventory, "inventory");
+
+if (settingsKeybindsEl) {
+  addSettingRow(settingsKeybindsEl, "Prayer tab", [kbPrayer]);
+  addSettingRow(settingsKeybindsEl, "Inventory tab", [kbInventory]);
 }
 
 
