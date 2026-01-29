@@ -76,7 +76,12 @@ export function createTileIndicator(THREE, {
   }
 
   function setEnabled(v) { obj.visible = !!v; }
-  function setColor(hex) { try { mat.color.set(hex); } catch {} }
+  function setColor(hex) {
+    const c = String(hex || "");
+    if (!c) return;
+    try { mat.color.set(c); }
+    catch (e) { /* ignore invalid color strings */ }
+  }
   function setOpacity255(v) { mat.opacity = clamp255(v) / 255; }
 
   function dispose() {
