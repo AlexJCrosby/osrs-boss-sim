@@ -18,8 +18,6 @@ import {
   renderInventory
 } from "./src/inventory.js";
 
-
-
 // ===== Config =====
 const GRID_W = 12;
 const GRID_H = 12;
@@ -801,6 +799,35 @@ function worldToScreen(x, y, z, camera, canvas) {
   return { x: sx, y: sy, onScreen: v.z > -1 && v.z < 1 };
 }
 
+// ===== Overhead prayer smoothing (prevents jitter during camera pan) =====
+const overheadSmooth = {
+  player: { x: null, y: null },
+  boss: { x: null, y: null },
+};
+
+function setOverheadTransform(el, smoothState, targetX, targetY) {
+  const dpr = window.devicePixelRatio || 1;
+
+  // Initialize instantly on first use (prevents pop-in)
+  if (smoothState.x == null || smoothState.y == null) {
+    smoothState.x = targetX;
+    smoothState.y = targetY;
+  }
+
+  // Smooth factor: higher = snappier, lower = smoother.
+  // 0.35 is a good "stop jitter but still responsive" value.
+  const a = 0.35;
+  smoothState.x += (targetX - smoothState.x) * a;
+  smoothState.y += (targetY - smoothState.y) * a;
+
+  // Snap to device pixel grid (prevents shimmer)
+  const sx = Math.round(smoothState.x * dpr) / dpr;
+  const sy = Math.round(smoothState.y * dpr) / dpr;
+
+  // Anchor over head (centered, above)
+  el.style.transform = `translate3d(${sx}px, ${sy}px, 0) translate(-50%, -100%)`;
+}
+
 function updateOverheadPrayers() {
   // --- Player overhead: only show when a prayer is active ---
   const pLabel = prayerLabel(playerPrayer);
@@ -815,8 +842,7 @@ function updateOverheadPrayers() {
 
     setOverheadText(playerPrayerOverhead, pLabel);
     playerPrayerOverhead.classList.toggle("hidden", !pScreen.onScreen);
-    playerPrayerOverhead.style.left = `${pScreen.x}px`;
-    playerPrayerOverhead.style.top = `${pScreen.y}px`;
+    setOverheadTransform(playerPrayerOverhead, overheadSmooth.player, pScreen.x, pScreen.y);
   } else {
     playerPrayerOverhead.classList.add("hidden");
   }
@@ -836,11 +862,9 @@ function updateOverheadPrayers() {
     camera,
     canvas
   );
-
   setOverheadText(bossPrayerOverhead, bLabel);
   bossPrayerOverhead.classList.toggle("hidden", !bScreen.onScreen);
-  bossPrayerOverhead.style.left = `${bScreen.x}px`;
-  bossPrayerOverhead.style.top = `${bScreen.y}px`;
+  setOverheadTransform(bossPrayerOverhead, overheadSmooth.boss, bScreen.x, bScreen.y);
 }
 
 // Active splats

@@ -592,11 +592,16 @@ body.sidebar-open .settings-tab-handle::before {
 /* ===== Overhead prayer indicators ===== */
 .overheadPrayer {
   position: fixed;
-  transform: translate(-50%, -100%);
-  z-index: 60;            /* above canvas, below boss bar (boss bar is 2000) */
+  left: 0;
+  top: 0;
+
+  /* JS will set the full transform each frame */
+  z-index: 60;
   pointer-events: none;
   user-select: none;
+  will-change: transform;
 }
+
 
 .overheadPrayer.hidden {
   display: none;
