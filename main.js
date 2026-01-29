@@ -996,7 +996,6 @@ function resetBossHP() {
   bossMaxHP = 1000;
   bossHP = bossMaxHP;
   updateBossBarUI();
-
 }
 
 function applyBossHit({ amount, style }) {
@@ -1022,6 +1021,10 @@ function applyBossHit({ amount, style }) {
   updateBossBarUI();
   spawnBossHitSplat({ value: finalDmg, kind: finalDmg === 0 ? "splash" : "damage" });
 
+  if (bossHP <= 0) {
+    reset();
+    return;
+  }
 }
 
 godToggle.addEventListener("change", () => {
@@ -1114,7 +1117,7 @@ function applyHit(hit) {
   pendingDamageThisTick += mitigated;
 
   updateHealthUI();
-
+  // Auto-reset when boss dies
   if (currentHP <= 0) {
     if (godMode) {
       currentHP = maxHP;

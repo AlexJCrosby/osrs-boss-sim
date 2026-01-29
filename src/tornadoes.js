@@ -175,7 +175,6 @@ export function createTornadoes(THREE, {
         ...config,
       },
     });
-
     return tileIndicator;
   }
 
