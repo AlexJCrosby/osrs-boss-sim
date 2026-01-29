@@ -29,7 +29,6 @@
         aria-label="Open settings">
       ☰
     </button>
-
     <!-- ===== Left settings sidebar (collapsible) ===== -->
     <aside id="settingsSidebar" class="settings-sidebar" aria-label="Settings sidebar">
       <div class="settings-scroll">
@@ -37,28 +36,21 @@
           <h3>Health</h3>
           <div id="settingsHealth" class="settings-group"></div>
         </section>
-
         <section class="settings-section" aria-label="Accessibility settings">
           <h3>Accessibility</h3>
           <div id="settingsAccessibility" class="settings-group"></div>
         </section>
-
         <section class="settings-section">
           <h3>Custom Keybinds</h3>
           <div id="settingsKeybinds" class="settings-group"></div>
         </section>
-
-
         <section class="settings-section" aria-label="Tile indicator settings">
           <h3>Tile Indicators</h3>
           <div id="settingsIndicators" class="settings-group"></div>
         </section>
       </div>
     </aside>
-
     <canvas id="game"></canvas>
-
-    <!-- ===== Prayer UI (bottom-right) ===== -->
     <!-- ===== Side panel (bottom-right): Tabs (Prayer / Inventory) ===== -->
     <div id="sidePanel" class="side-panel" aria-label="Side panel">
       <div class="side-tabs" role="tablist" aria-label="Side panel tabs">
@@ -69,17 +61,13 @@
           Prayer
         </button>
       </div>
-
-
-
       <div class="side-content">
-        <!-- Prayer tab view (keeps your existing button ids) -->
+        <!-- Prayer tab view -->
         <div id="prayerTab" class="tab-view prayer-ui" aria-label="Prayer tab">
           <button id="prayRange" class="prayer-btn" type="button" aria-label="Protect from Missiles"></button>
           <button id="prayMage" class="prayer-btn" type="button" aria-label="Protect from Magic"></button>
         </div>
-
-        <!-- Inventory tab view (placeholder grid for now) -->
+        <!-- Inventory tab view -->
         <div id="inventoryTab" class="tab-view inventory-ui is-hidden" aria-label="Inventory tab">
           <div id="invGrid" class="inv-grid" aria-label="Inventory grid"></div>
         </div>

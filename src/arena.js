@@ -12,8 +12,8 @@ export function createArena(THREE, { scene, canvas, camera, gridW, gridH }) {
   grid.position.set(gridW / 2, 0.001, gridH / 2);
   scene.add(grid);
 
-  // invisible picking plane (bigger than arena so off-grid clicks still register)
-  const PICK_SCALE = 50; // big enough to cover the viewport comfortably
+  // invisible picking plane; bigger than arena so off-grid clicks still register
+  const PICK_SCALE = 50; 
   const pickPlane = new THREE.Mesh(
     new THREE.PlaneGeometry(gridW * PICK_SCALE, gridH * PICK_SCALE),
     new THREE.MeshBasicMaterial({ visible: false })

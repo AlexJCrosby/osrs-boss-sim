@@ -30,7 +30,6 @@ export function createDangerFloor(THREE, {
   const halfH = Math.floor(gridH / 2);
 
   // Quadrant origins in tile coords (x,y)
-  // (These assume your tile coords are 0..gridW-1 and 0..gridH-1, as in your current code.)
   const corners = [
     { name: "BL", ox: 0,      oy: 0 },       // bottom-left
     { name: "BR", ox: halfW,  oy: 0 },       // bottom-right
@@ -174,7 +173,7 @@ export function createDangerFloor(THREE, {
   }
 
   return {
-    // Call once per fight tick (only while in FIGHT state)
+    // Call once per fight tick 
     update(fightTick) {
       ensureSpawned(fightTick);
       if (!active) return;
@@ -183,13 +182,13 @@ export function createDangerFloor(THREE, {
       applyDamageIfNeeded();
     },
 
-    // Call after update (or every frame if you want — tick is fine)
+    // Call after update
     render,
 
     // Call on Start/Reset
     reset,
 
-    // Optional: for debugging
+    // For debugging
     debugState() {
       const c = corners[cornerIndex];
       return { active, spawned, phase, cycleTick, corner: c.name, ox: c.ox, oy: c.oy };

@@ -13,7 +13,7 @@ export function createTornadoes(THREE, {
     firstSpawnTick = 60,
     periodTicks = 54,
     durationTicks = 21,     // how long tornadoes remain active after spawning
-    slamLeadTicks = 2,      // optional: "slam" happens 2 ticks before spawn
+    slamLeadTicks = 2,      // ticks before spawn to warn player  
 
     // Wave size
     baseCount = 2,          // wave 1
@@ -23,14 +23,12 @@ export function createTornadoes(THREE, {
     cornerRegionSize = 3,
 
     // Movement (LOGIC)
-    speedTilesPerTick = 1,  // one tile per tick (keep this)
+    speedTilesPerTick = 1,  // one tile per tick 
 
     // Visual smoothing
     tickSeconds: initialTickSeconds = 0.6,
 
-    
-
-    y = 0.28,               // above floor, below player
+    y = 0.28, // above floor, below player
 
     // Damage
     damageMin = 5,
@@ -39,7 +37,7 @@ export function createTornadoes(THREE, {
     // Visual
     opacity = 0.65,
     color = 0x99ccff,
-    renderOrder = 3,        // above danger floor; tweak if you want
+    renderOrder = 3,        // above danger floor
   } = config;
 
   let tickSeconds = initialTickSeconds;
@@ -174,7 +172,7 @@ export function createTornadoes(THREE, {
       scene,
       getTiles: getTornadoTiles,
       config: {
-        // Allow multiple tiles. Pick a cap that’s safely above your max tornado count.
+        // Allow multiple tiles
         maxTiles: 64,
         ...config,
       },
@@ -233,10 +231,6 @@ export function createTornadoes(THREE, {
 
     const spawnTick = waveSpawnTick(idx);
     const slamTick = spawnTick - slamLeadTicks;
-
-    if (fightTick === slamTick) {
-      console.log(`Boss slam (tornado warning) at tick ${fightTick} (wave ${idx + 1})`);
-    }
 
     if (fightTick !== spawnTick) return;
 
@@ -358,13 +352,11 @@ export function createTornadoes(THREE, {
       tornadoes = [];
       active = false;
       waveStartTick = null;
-      console.log(`Tornadoes despawn at tick ${fightTick}`);
-      console.log("DESPAWN", { fightTick, waveStartTick, durationTicks }); // temporary debugging
       syncTornadoesTileIndicator();
     }
   }
 
-  // Call this every animation frame (like player.updateVisual(dt))
+  // Call every animation frame
   function updateVisual(dt) {
     if (!active) return;
 

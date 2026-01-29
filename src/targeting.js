@@ -22,7 +22,6 @@ export function createTargeting(THREE, { scene, canvas, targetEl, pickTileFromMo
     ring.visible = false;
   }
 
-  // NOTE: Your current code uses left click (button 0). Keep that unless you want right click (2).
   canvas.addEventListener("mousedown", (e) => {
     if (e.button !== 0) return;
     const hit = pickTileFromMouse(e);

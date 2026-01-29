@@ -1,6 +1,4 @@
-// src/tileIndicator.js
-// Generic -only tile indicator (border). Reusable for player/tornadoes/boss.
-
+// Generic tile indicator
 export function createTileIndicator(THREE, {
   scene,
   getTiles,           // () => Array<{x:number,y:number}>
@@ -9,7 +7,7 @@ export function createTileIndicator(THREE, {
   const {
     enabled = true,
     color = "#FFB03F",
-    opacity255 = 160,     // 0..255
+    opacity255 = 160,    
     y = 0.02,
     inset = 0.03,
     maxTiles = 256,
@@ -42,7 +40,7 @@ export function createTileIndicator(THREE, {
   const obj = new THREE.LineSegments(geo, mat);
   obj.visible = !!enabled;
   obj.renderOrder = renderOrder;
-  obj.frustumCulled = false; // IMPORTANT: bounds are dynamic; avoid flicker/culling
+  obj.frustumCulled = false; 
   scene.add(obj);
 
   function writeTile(offset, x, z) {

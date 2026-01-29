@@ -20,10 +20,10 @@ export function createOrbitCameraController(THREE, { canvas, camera, getFocus })
     return a + (b - a) * t;
   }
 
-  // --- Smoothed camera focus (prevents snapping when logical tile updates) ---
+  // --- Smoothed camera focus (prevents snapping when logical tile updates ---
   let smoothFx = null;
   let smoothFz = null;
-  const FOCUS_Y = 0.45;   // keep constant (matches your old focus.y)
+  const FOCUS_Y = 0.45;   // keep constant 
   const FOCUS_SMOOTH = 2; // lower = floatier, higher = tighter
 
   // Alt + RMB drag
@@ -79,7 +79,7 @@ export function createOrbitCameraController(THREE, { canvas, camera, getFocus })
 
     orbitPitch = clamp(orbitPitch, MIN_PITCH, MAX_PITCH);
 
-    // Raw focus (player's smooth render position should be coming from getFocus())
+    // Raw focus 
     const f = getFocus();
     const rawFx = f.x + 0.5;
     const rawFz = f.y + 0.5;

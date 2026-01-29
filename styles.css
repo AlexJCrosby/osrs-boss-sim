@@ -79,7 +79,7 @@ canvas#game {
   width: var(--sidebarW);
   height: calc(100vh - var(--hudH));
   z-index: 50;
-  overflow-x: hidden; /* belt + braces */
+  overflow-x: hidden;
 
 
   background: rgba(16, 19, 26, 0.94);
@@ -99,7 +99,7 @@ body.sidebar-open .settings-sidebar {
   overflow: auto;
   padding: 12px 12px 24px;
   overflow-y: auto;
-  overflow-x: hidden; /* <-- key */
+  overflow-x: hidden; 
 }
 
 .settings-section {
@@ -165,7 +165,6 @@ body.sidebar-open .settings-sidebar {
   transform-origin: left center;
 }
 
-/* Make color picker square, not a weird rectangle */
 .settings-sidebar input[type="color"] {
   width: 34px;
   height: 34px;
@@ -218,7 +217,7 @@ body.sidebar-open .settings-tab-handle {
   left: var(--sidebarW);
 }
 
-/* Optional: make it look “attached” by rounding the opposite corners */
+/* make it look attached by rounding the opposite corners */
 body.sidebar-open .settings-tab-handle::before {
   content: "";
   position: absolute;
@@ -236,7 +235,7 @@ body.sidebar-open .settings-tab-handle::before {
   right: 30px;
   top: 280px;
   z-index: 20;
-  width: 120px;   /* just a small anchor area */
+  width: 120px;   /* small anchor area */
   height: 120px;  /* enough space for orb */
   user-select: none;
   pointer-events: none;
@@ -252,8 +251,8 @@ body.sidebar-open .settings-tab-handle::before {
 /* Bar has its own fixed position */
 .hpBar {
   position: absolute;
-  left: 80px;   /* place it to the left of orb (tweak as you like) */
-  bottom: 55px;      /* align vertically with orb */
+  left: 80px;  
+  bottom: 55px;
 }
 
 
@@ -271,7 +270,7 @@ body.sidebar-open .settings-tab-handle::before {
   border: 2px solid rgba(0,0,0,0.55);
 }
 
-/* Inner “glass” to make it look orb-y */
+/* Inner glass to make it look like an orb */
 .hpOrb::after {
   content: "";
   position: absolute;
@@ -313,7 +312,7 @@ body.sidebar-open .settings-tab-handle::before {
   background: linear-gradient(to top, #7f0000, #ff2b2b);
 }
 
-/* ===== Hit splats (damage feedback) ===== */
+/* ===== Hit splats ===== */
 .hitSplatLayer {
   position: fixed;
   inset: 0;
@@ -373,19 +372,15 @@ body.sidebar-open .settings-tab-handle::before {
   border: none;
   padding: 0;
   cursor: pointer;
-
-  /* Debug-friendly: uncomment to see hitboxes */
-  /* outline: 1px dashed rgba(255,255,255,0.25); */
 }
 
-/* Positions tuned to your screenshot image */
 #prayRange {
   left: 162px;
   top: 241px;
 }
 
 #prayMage {
-  left: 90px;   /* icon area 1 */
+  left: 90px;  
   top: 241px;
 }
 
@@ -524,7 +519,7 @@ body.sidebar-open .settings-tab-handle::before {
   pointer-events: none;
 }
 
-/* ===== Boss HP Bar (overlay, NOT part of HUD) ===== */
+/* ===== Boss HP Bar Overlay ===== */
 .bossTopBar {
   position: fixed;
   top: 60px;
@@ -546,7 +541,7 @@ body.sidebar-open .settings-tab-handle::before {
 .bossTopBar .bossName {
   font-size: 18px;
   font-weight: 700;
-  color: #d7bf7a; /* OSRS-ish gold */
+  color: #d7bf7a; /* OSRS-ish yellow */
   text-shadow: 0 2px 2px rgba(0,0,0,0.9);
 }
 
@@ -576,9 +571,8 @@ body.sidebar-open .settings-tab-handle::before {
   justify-content: center;
 
   font-size: 18px;
-  font-weight: 400; /* NOT bold */
+  font-weight: 400;
   color: #ffffff;
-
 
   /* Font outline effect */
   text-shadow:
@@ -587,49 +581,4 @@ body.sidebar-open .settings-tab-handle::before {
     -1px  1px 0 #000,
      1px  1px 0 #000,
      0    2px 2px rgba(0,0,0,0.9);
-}
-
-/* ===== Overhead prayer indicators ===== */
-.overheadPrayer {
-  position: fixed;
-  left: 0;
-  top: 0;
-
-  /* JS will set the full transform each frame */
-  z-index: 60;
-  pointer-events: none;
-  user-select: none;
-  will-change: transform;
-}
-
-
-.overheadPrayer.hidden {
-  display: none;
-}
-
-.overheadPrayerInner {
-  width: 60px;        /* square */
-  height: 60px;       /* square */
-
-  display: grid;
-  place-items: center;
-
-  font-size: 26px;    /* ~1.5× emoji size */
-  line-height: 1;
-
-  letter-spacing: 0;  /* emojis hate spacing */
-
-  background: rgba(141, 141, 141, 0.241);
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  border-radius: 6px; /* subtle OSRS-like rounding */
-
-  box-shadow:
-    0 6px 18px rgba(0,0,0,0.35),
-    inset 0 1px 0 rgba(255,255,255,0.08);
-
-  text-shadow:
-    -1px -1px 0 #000,
-     1px -1px 0 #000,
-    -1px  1px 0 #000,
-     1px  1px 0 #000;
 }

@@ -9,14 +9,14 @@ export function createPlayer(THREE, { scene, startX, startY }) {
   let renderY = player.y;
   
 
-    // --- Tick-length movement animation (so it glides over the whole tick) ---
-    let tickSeconds = 0.6; // matches your 600ms tick
+    // --- Tick-length movement animation so it glides over the whole tick ---
+    let tickSeconds = 0.6; // matches 0.6s tick
     let moveFromX = renderX, moveFromY = renderY;
     let moveToX = renderX, moveToY = renderY;
     let moveElapsed = tickSeconds;
 
     function beginMoveToCurrentLogical() {
-      // start from wherever we're currently drawn (prevents snapping)
+      // start from wherever player is currently drawn 
       moveFromX = renderX;
       moveFromY = renderY;
       moveToX = player.x;
@@ -40,7 +40,7 @@ export function createPlayer(THREE, { scene, startX, startY }) {
   scene.add(mesh);
   mesh.renderOrder = 5;
 
-  // ===== Player tile indicator (owned by player) =====
+  // ===== Player tile indicator =====
   let tileIndicator = null;
 
   function createPlayerTileIndicator(config = {}) {
@@ -90,11 +90,11 @@ export function createPlayer(THREE, { scene, startX, startY }) {
     player.x = x;
     player.y = y;
 
-    // Teleport visuals too (e.g., on reset/start)
+    // Teleport visuals too on reset/restart
     renderX = player.x;
     renderY = player.y;
 
-    // also reset animation so we don't "glide" after a teleport/reset
+    // also reset animation so player doesn't "glide" after a teleport/reset
     moveFromX = moveToX = renderX;
     moveFromY = moveToY = renderY;
     moveElapsed = tickSeconds;
@@ -104,7 +104,7 @@ export function createPlayer(THREE, { scene, startX, startY }) {
   }
 
   // OSRS-style stepping: a "step" can be diagonal (x and y can change together).
-  // speed = tiles per tick (you pass 2 for the player)
+  // speed = tiles per tick (2 for player while run is active)
   function stepToward(target, speed, gridW, gridH) {
     if (!target) return;
 
@@ -116,25 +116,23 @@ export function createPlayer(THREE, { scene, startX, startY }) {
       player.x += Math.sign(dx);
       player.y += Math.sign(dy);
 
-      // Keep inside arena each step (safer than clamping only once at the end)
+      // Keep inside arena each step
       player.x = clamp(player.x, 0, gridW - 1);
       player.y = clamp(player.y, 0, gridH - 1);
 
       steps--;
     }
-    // If we moved logically this tick, start a glide toward the new logical tile
+    // If player moved logically this tick, start a glide toward the new logical tile
     beginMoveToCurrentLogical();
 
   }
 
   function updateVisual(dt) {
-    // progress the current "move over the tick"
+    // progress the current move animation
     moveElapsed = Math.min(tickSeconds, moveElapsed + dt);
     const t = moveElapsed / tickSeconds;
 
-    // choose easing: smoothstep(t) for ease-in-out, or just t for linear
     const u = t; // linear
-
 
     renderX = lerp(moveFromX, moveToX, u);
     renderY = lerp(moveFromY, moveToY, u);
@@ -164,4 +162,3 @@ export function createPlayer(THREE, { scene, startX, startY }) {
     updateVisual,
   };
 }
-

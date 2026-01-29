@@ -38,7 +38,7 @@ const tickEl = document.getElementById("tick");
 const startBtn = document.getElementById("startBtn");
 const resetBtn = document.getElementById("resetBtn");
 
-// ===== Boss HP Bar (overlay, NOT part of HUD) =====
+// ===== Boss HP Bar =====
 const bossBar = document.createElement("div");
 bossBar.className = "bossTopBar hidden";
 
@@ -74,18 +74,15 @@ function updateBossBarUI() {
   bossHpText.textContent = `${bossHP} / ${bossMaxHP}`;
 }
 
-
 // Sidebar containers
 const settingsHealthEl = document.getElementById("settingsHealth");
 const settingsAccessibilityEl = document.getElementById("settingsAccessibility");
 const settingsIndicatorsEl = document.getElementById("settingsIndicators");
 const settingsKeybindsEl = document.getElementById("settingsKeybinds");
 
-
 // ===== Keybinds (persisted) =====
 function normalizeKeyForBind(k) {
   if (!k) return "";
-  // Keep arrows readable, normalize everything to lowercase
   return String(k).toLowerCase();
 }
 
@@ -189,9 +186,6 @@ hpInput.value = String(Math.min(99, Math.max(10, storedStartHP)));
 const storedShowBar = localStorage.getItem("showHPBar");
 showBarToggle.checked = storedShowBar === null ? true : storedShowBar === "1";
 
-// Inject controls into the existing .hud (top bar)
-const hudEl = document.querySelector(".hud");
-
 // Load persisted (default 10)
 fishInput.value = String(Math.min(26, Math.max(0, storedStartFish)));
 
@@ -205,7 +199,6 @@ fishInput.addEventListener("change", () => {
     seedStarterInventoryFromSettings();
   }
 });
-
 
 // Inject controls into the LEFT sidebar
 if (settingsHealthEl) {
@@ -222,7 +215,7 @@ hpInput.addEventListener("change", () => {
 
 showBarToggle.addEventListener("change", () => {
   localStorage.setItem("showHPBar", showBarToggle.checked ? "1" : "0");
-  updateHealthUI(); // will be defined below
+  updateHealthUI(); 
 });
 
 // ===== Boss click detection (intercepts BEFORE targeting.js mousedown) =====
@@ -235,7 +228,7 @@ function setMouseFromEvent(e) {
   mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 }
 
-// IMPORTANT: use CAPTURE so we run before targeting.js's mousedown handler
+// Boss click handler
 canvas.addEventListener(
   "mousedown",
   (e) => {
@@ -255,10 +248,10 @@ canvas.addEventListener(
 
     onBossClicked();
   },
-  true // <--- capture!
+  true
 );
 
-// ===== Health UI (orb + optional bar) =====
+// ===== Health UI (orb + optional HP bar) =====
 const healthHud = document.createElement("div");
 healthHud.className = "healthHud";
 
@@ -279,7 +272,7 @@ hpBar.appendChild(hpBarFill);
 healthHud.append(hpBar, hpOrb);
 document.body.appendChild(healthHud);
 
-// ===== Hit splats (damage feedback) =====
+// ===== Hit splats =====
 const hitSplatLayer = document.createElement("div");
 hitSplatLayer.className = "hitSplatLayer";
 document.body.appendChild(hitSplatLayer);
@@ -313,7 +306,7 @@ function setOverheadText(el, txt) {
   if (inner) inner.textContent = txt;
 }
 
-// ===== Player prayer state (MVP) =====
+// ===== Player prayer state =====
 const Prayer = Object.freeze({
   NONE: "NONE",
   RANGE: "RANGE",
@@ -353,23 +346,21 @@ function makePrayerSprite(THREE, texture) {
   const mat = new THREE.SpriteMaterial({
     map: texture,
     transparent: true,
-    depthTest: false,   // keeps it visible
+    depthTest: false,  
     depthWrite: false,
   });
 
   const spr = new THREE.Sprite(mat);
   spr.renderOrder = 999;
-  spr.scale.set(1, 1, 1); // size in world units; tweak if needed
+  spr.scale.set(0.9, 0.9, 1); // size in world units
   return spr;
 }
 
 function setSpriteConstantScreenSize(sprite, camera, desiredPx, canvas) {
   if (!sprite) return;
 
-  // How many world units correspond to 1 pixel at the sprite's distance?
   const dist = camera.position.distanceTo(sprite.position);
 
-  // Vertical size of view at that distance
   const vFovRad = (camera.fov * Math.PI) / 180;
   const viewHeightWorld = 2 * Math.tan(vFovRad / 2) * dist;
 
@@ -395,8 +386,6 @@ function setSpritePrayer(sprite, pr) {
   sprite.material.needsUpdate = true;
 }
 
-
-// Default for now (until UI exists)
 let playerPrayer = Prayer.NONE;
 
 // ===== Side panel tabs (Prayer / Inventory) =====
@@ -427,7 +416,7 @@ function setActiveSideTab(tabName) {
 window.addEventListener("keydown", (e) => {
   if (e.repeat) return;
 
-  // Don't trigger while typing in inputs/textareas/contenteditable
+  // Don't trigger while typing in inputs/textareas
   const t = e.target;
   const typing =
     t &&
@@ -452,10 +441,10 @@ window.addEventListener("keydown", (e) => {
 if (tabPrayerBtn) tabPrayerBtn.addEventListener("click", () => setActiveSideTab("prayer"));
 if (tabInventoryBtn) tabInventoryBtn.addEventListener("click", () => setActiveSideTab("inventory"));
 
-// Default view on load
+// Default tab viewed on load
 setActiveSideTab("prayer");
 
-// ===== Inventory grid placeholder (28 slots) =====
+// ===== Inventory grid placeholders (28 slots) =====
 const invGridEl = document.getElementById("invGrid");
 
 if (invGridEl) {
@@ -466,17 +455,6 @@ if (invGridEl) {
     slot.dataset.index = String(i);
     invGridEl.appendChild(slot);
   }
-}
-
-function seedStarterInventory() {
-  const fishCount = Math.min(26, Math.max(0, Number(fishInput?.value || localStorage.getItem("startFish") || 10)));
-
-  clearInventory();
-  addItemToInventory("STAFF", 1);
-  addItemToInventory("BOW", 1);
-  addItemToInventory("PADDLEFISH", fishCount);
-
-  renderInventory(invGridEl);
 }
 
 function seedStarterInventoryFromSettings() {
@@ -501,7 +479,6 @@ if (invGridEl) {
   seedStarterInventoryFromSettings();
 }
 
-
 // ===== Inventory: click -> equip/eat =====
 if (invGridEl) {
   invGridEl.addEventListener("click", (e) => {
@@ -515,9 +492,7 @@ if (invGridEl) {
     const def = ITEM_DEFS[stack.id];
     if (!def) return;
 
-    // ===============================
     // Equip weapon (weapons removed while equipped)
-    // ===============================
     if (def.type === "WEAPON") {
       const clickedWeapon = stack.id;
 
@@ -551,8 +526,7 @@ if (invGridEl) {
       const removed = removeOneFromSlot(idx);
       if (!removed) return;
 
-      // 3) heal (you already have currentHP/maxHP/updateHealthUI in your codebase)
-      //    If your variables are named differently, just map them here.
+      // 3) heal player
       if (typeof currentHP === "number" && typeof maxHP === "number") {
         currentHP = Math.min(maxHP, currentHP + (def.heal ?? 0));
         if (typeof updateHealthUI === "function") updateHealthUI();
@@ -578,13 +552,11 @@ if (invGridEl) {
     function resetInventoryToStarter() {
       if (!invGridEl) return;
 
-
-      // Reset equipment + timers too (optional but usually desired on reset)
+      // Reset equipment + timers
       playerAction.attackCd = 0;
       playerAction.eatCd = 0;
 
       seedStarterInventoryFromSettings();
-      // (keep any timer resets you already do)
     }
 
 // ===== Prayer UI wiring =====
@@ -592,7 +564,7 @@ const prayRangeBtn = document.getElementById("prayRange");
 const prayMageBtn = document.getElementById("prayMage");
 
 function setPlayerPrayer(next) {
-  // Toggle behaviour: clicking same prayer turns it off
+  // Toggle behaviour
   if (playerPrayer === next) playerPrayer = Prayer.NONE;
   else playerPrayer = next;
 
@@ -613,11 +585,10 @@ if (prayMageBtn) prayMageBtn.addEventListener("click", () => setPlayerPrayer(Pra
 // Ensure correct initial highlight
 updatePrayerUI();
 
-// Boss protection prayers mitigate by 75% => take 25% damage
+// Player protection prayers mitigate by 75% => take 25% damage
 const PROTECT_PRAYER_MULT = 0.25;
 
-
-// Simple inline SVG splat background (no external assets)
+// SVG splat background
 function splatSvgDataUri(fill, stroke) {
   const svg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="64" height="48" viewBox="0 0 64 48">
@@ -632,7 +603,6 @@ function splatSvgDataUri(fill, stroke) {
 }
 
 const SPLAT_RED_BG = splatSvgDataUri("#b40000", "#3b0000");
-// Optional for later (splash/0):
 const SPLAT_BLUE_BG = splatSvgDataUri("#1a52d6", "#0b1b4a");
 
 // ===== God mode (training mode) =====
@@ -644,8 +614,6 @@ const storedGodMode = localStorage.getItem("godMode");
 godToggle.checked = storedGodMode === "1";
 
 // ===== Slow-mo speed control (persisted) =====
-
-
 const speedSlider = document.createElement("input");
 speedSlider.type = "range";
 speedSlider.min = "25";
@@ -670,13 +638,13 @@ speedSlider.value = String(startSpeed);
 speedInput.value = String(startSpeed);
 
 
-// ===== Inject into LEFT sidebar (after everything is defined) =====
+// ===== Inject into LEFT sidebar
 if (settingsAccessibilityEl) {
   addSettingRow(settingsAccessibilityEl, "God mode", [godToggle]);
   addSettingRow(settingsAccessibilityEl, "Speed", [speedSlider, speedInputWrap]);
 }
 
-// ----- Keybind inputs -----
+// ===== Keybind inputs
 const kbPrayer = document.createElement("input");
 kbPrayer.type = "text";
 kbPrayer.maxLength = 16;
@@ -697,7 +665,6 @@ function bindKeyInput(inputEl, which) {
     const k = normalizeKeyForBind(e.key);
     if (!k) return;
 
-    // Optional: block modifier-only keys
     if (k === "shift" || k === "control" || k === "alt" || k === "meta") return;
 
     keybinds[which] = k;
@@ -765,7 +732,6 @@ ptiOpacityNum.step = "1";
 ptiOpacityNum.value = ptiOpacity.value;
 ptiOpacityNum.style.width = "64px";
 
-// Inject ONLY player row here (TTI doesn't exist yet)
 if (settingsIndicatorsEl) {
   addSettingRow(settingsIndicatorsEl, "Player tile", [ptiToggle, ptiColor, ptiHex, ptiOpacity, ptiOpacityNum]);
 }
@@ -834,7 +800,7 @@ function applyTTIUIToWorld() {
     opacity255: op,
   });
 
-  // Optional: force a sync immediately (usually tornadoes update does it each tick anyway)
+  // Optional: force a sync immediately
   tornadoes.syncTornadoesTileIndicator();
 }
 
@@ -875,6 +841,7 @@ function worldToScreen(x, y, z, camera, canvas) {
   return { x: sx, y: sy, onScreen: v.z > -1 && v.z < 1 };
 }
 
+
 // ===== Overhead prayer smoothing (prevents jitter during camera pan) =====
 const overheadSmooth = {
   player: { x: null, y: null },
@@ -895,7 +862,7 @@ function setOverheadTransform(el, smoothState, targetX, targetY) {
   const dy = ty - smoothState.y;
 
   const DEADZONE_PX = 1.0;   // ignore tiny jitters
-  const FOLLOW = 1;        // very snappy (minimal lag)
+  const FOLLOW = 1;        // minimal lag
 
   if (Math.abs(dx) > DEADZONE_PX) smoothState.x += dx * FOLLOW;
   else smoothState.x = tx;
@@ -907,45 +874,6 @@ function setOverheadTransform(el, smoothState, targetX, targetY) {
   smoothState.y = Math.round(smoothState.y * dpr) / dpr;
 
   el.style.transform = `translate3d(${smoothState.x}px, ${smoothState.y}px, 0) translate(-50%, -100%)`;
-}
-
-function updateOverheadPrayers() {
-  // --- Player overhead: only show when a prayer is active ---
-  const pLabel = prayerLabel(playerPrayer);
-  if (pLabel) {
-    const pScreen = worldToScreen(
-      player.renderX + 0.5,
-      1.55,
-      player.renderY + 0.5,
-      camera,
-      canvas
-    );
-
-    setOverheadText(playerPrayerOverhead, pLabel);
-    playerPrayerOverhead.classList.toggle("hidden", !pScreen.onScreen);
-    setOverheadTransform(playerPrayerOverhead, overheadSmooth.player, pScreen.x, pScreen.y);
-  } else {
-    playerPrayerOverhead.classList.add("hidden");
-  }
-
-  // --- Boss overhead: ALWAYS visible (even in lobby) ---
-  const bossPr = boss.getProtectionPrayer?.() || "RANGE";
-  const bLabel = (bossPr === "MAGE") ? "🔥" : "🏹";
-
-
-  const wp = new THREE.Vector3();
-  boss.mesh.getWorldPosition(wp);
-
-  const bScreen = worldToScreen(
-    wp.x,
-    wp.y + 1.65,
-    wp.z,
-    camera,
-    canvas
-  );
-  setOverheadText(bossPrayerOverhead, bLabel);
-  bossPrayerOverhead.classList.toggle("hidden", !bScreen.onScreen);
-  setOverheadTransform(bossPrayerOverhead, overheadSmooth.boss, bScreen.x, bScreen.y);
 }
 
 // Active splats
@@ -1032,12 +960,11 @@ function spawnHitSplat({ value, kind = "damage" }) {
  * Boss helper: spawn above boss mesh
  */
 function spawnBossHitSplat({ value, kind = "damage" }) {
-  // IMPORTANT: mesh.position may be LOCAL (if mesh is parented).
   // getWorldPosition() returns WORLD space, which matches worldToScreen().
   const wp = new THREE.Vector3();
   boss.mesh.getWorldPosition(wp);
 
-  const anchor = { wx: wp.x, wy: wp.y + 1.2, wz: wp.z }; // bump height as needed
+  const anchor = { wx: wp.x, wy: wp.y + 0.8, wz: wp.z }; // bump height as needed
   spawnHitSplatAt({ value, kind, anchorWorld: anchor });
 }
 
@@ -1060,7 +987,7 @@ function applySpeedPercent(pct) {
   tornadoes.setTickSeconds(tickSec);
 }
 
-// Real HP state (replaces playerHP)
+// Real HP state
 let maxHP = Number(hpInput.value);
 let currentHP = maxHP;
 let godMode = godToggle.checked;
@@ -1080,7 +1007,7 @@ function applyBossHit({ amount, style }) {
   const raw = Number(amount);
   if (!Number.isFinite(raw)) return;
 
-  const dmgRolled = Math.max(0, Math.floor(raw)); // 0..max
+  const dmgRolled = Math.max(0, Math.floor(raw)); 
   const bossPray = boss.getProtectionPrayer?.();
 
   // Boss protection prayer: 100% mitigation if matched
@@ -1123,12 +1050,12 @@ function updateHealthUI() {
   // Bar: scale down from bottom
   hpBarFill.style.transform = `scaleY(${pct})`;
 
-  // Toggle bar visibility (future UX feature; already wired)
+  // Toggle bar visibility
   hpBar.style.display = showBarToggle.checked ? "block" : "none";
 }
 updateHealthUI();
 
-// ===== Hit pipeline (ALL damage should go through applyHit) =====
+// ===== Hit pipeline (ALL damage goes through applyHit) =====
 const HitSource = Object.freeze({
   FLOOR: "FLOOR",
   TORNADO: "TORNADO",
@@ -1143,13 +1070,12 @@ const HitStyle = Object.freeze({
 });
 
 /**
- * Mitigation rules live here (player prayers now, boss prayers later).
+ * Mitigation rules live here
  * Return a NUMBER (damage amount AFTER mitigation), not a new hit object.
  */
 function mitigateHit(hit) {
   let dmg = hit.amount;
 
-  // Only boss standard attacks are affected by protection prayers (for now)
   const isBossAttack = hit.source === HitSource.BOSS;
   const isProtectableStyle = hit.style === HitStyle.RANGE || hit.style === HitStyle.MAGE;
 
@@ -1171,7 +1097,7 @@ function mitigateHit(hit) {
 
 /**
  * Unified damage entry point.
- * All systems (danger floor, tornadoes, boss, etc.) should call THIS.
+ * All systems (danger floor, tornadoes, boss, etc.) call THIS.
  */
 function applyHit(hit) {
   if (!hit) return;
@@ -1182,10 +1108,9 @@ function applyHit(hit) {
   const rawAmount = Number(hit.amount);
   if (!Number.isFinite(rawAmount) || rawAmount <= 0) return;
 
-  // Allow mitigation logic to clamp/modify damage (prayers come here later)
+  // Allow mitigation logic to clamp/modify damage
   const mitigated = Math.max(0, Math.floor(mitigateHit({ ...hit, amount: rawAmount })));
 
-  // Still count 0-damage hits in logs if you want later; for now we just no-op
   if (mitigated <= 0) return;
 
   currentHP -= mitigated;
@@ -1202,7 +1127,6 @@ function applyHit(hit) {
       console.log("God mode: lethal damage prevented, refilling HP");
       currentHP = maxHP;
       updateHealthUI();
-      // IMPORTANT: do NOT reset, do NOT return early
     } else {
       console.log("Player died (HP <= 0). Resetting...");
       reset();
@@ -1253,12 +1177,6 @@ const player = createPlayer(THREE, {
 // ===== Projectiles =====
 const projectiles = createProjectiles(THREE, { scene });
 
-
-// ===== Player Tile Indicator settings (persisted) =====
-const storedPTIEnabled = localStorage.getItem("ptiEnabled");
-const storedPTIColor = localStorage.getItem("ptiColor") || "#FFB03F";
-const storedPTIOpacity = Number(localStorage.getItem("ptiOpacity255") || "160");
-
 // ===== Player Tile Indicator instance (owned by player) =====
 player.createPlayerTileIndicator({
   enabled: (localStorage.getItem("ptiEnabled") ?? "1") === "1",
@@ -1271,17 +1189,11 @@ function bossWorldCenter() {
 }
 
 
-
 function playerWorldCenter() {
-  // Your arena uses tile coords directly in world space (1 tile = 1 unit)
-  // Center of a tile is (x + 0.5, z + 0.5) if your tile origin is corner-based.
-  // If your meshes already sit on integer centers, remove the +0.5.
 
   const x = (player.x ?? 0);
   const y = (player.y ?? 0);
 
-  // Most of your code uses x/y as tile coords directly.
-  // In your THREE scene, y is usually mapped to Z.
   return new THREE.Vector3(x, 0, y);
 }
 
@@ -1290,11 +1202,11 @@ function handleBossAttack({ style, amount }) {
   // Spawn projectile
   projectiles.spawnBossProjectile({
     style,
-    from: bossWorldCenter().add(new THREE.Vector3(0, 0.4, 0)),  // lift a bit
-    to: playerWorldCenter().add(new THREE.Vector3(0, 0.35, 0)), // aim at torso-ish
+    from: bossWorldCenter().add(new THREE.Vector3(0, 0.8, 0)),  // lift a bit
+    to: playerWorldCenter().add(new THREE.Vector3(0, 0.5, 0)), // aim at torso-ish
   });
 
-  // Apply damage through the hit pipeline (you already have this)
+  // Apply damage through the hit pipeline
   applyHit({
     source: HitSource.BOSS,
     style: style, // "RANGE"/"MAGE" matches your HitStyle strings
@@ -1302,8 +1214,6 @@ function handleBossAttack({ style, amount }) {
     countsTowardBossSwap: true,
   });
 }
-
-
 
 
 // ===== Boss =====
@@ -1416,7 +1326,7 @@ const cameraCtl = createOrbitCameraController(THREE, {
   getFocus: () => ({ x: player.renderX, y: player.renderY }),
 });
 
-// Register wheel ONCE (not per-frame)
+// Register wheel once (not per-frame)
 cameraCtl.attachZoomWheel();
 
 // ===== Tick loop (movement) =====
@@ -1447,7 +1357,7 @@ canvas.addEventListener("mousedown", (e) => {
   if (e.button !== 0) return;
   if (state !== GameState.FIGHT) return;
 
-  // If it's not a boss click (boss click listener stops propagation), treat it as movement intent.
+  // If not a boss click (boss click listener stops propagation) -> treat it as movement intent.
   cancelPlayerAttack("ground click / movement intent");
 });
 
@@ -1513,7 +1423,7 @@ const ticker = createTicker({
     playerAction.attackCd = Math.max(0, playerAction.attackCd - 1);
     playerAction.eatCd = Math.max(0, playerAction.eatCd - 1);
 
-    // ===== Movement (detect if we moved this tick) =====
+    // ===== Movement =====
     const prevX = player.x;
     const prevY = player.y;
 
@@ -1543,14 +1453,8 @@ const ticker = createTicker({
     boss.update(tick);
 
     // ===== Player attacks boss =====
-    // Rules:
-    // - Must have explicitly clicked boss (wantsToAttackBoss === true)
-    // - Must NOT be moving / have a movement target
-    // - Must have a staff/bow equipped
-    // - Must be off cooldown
     if (playerCombat.wantsToAttackBoss) {
       // If player is currently pathing / has a movement intent, do not attack
-      // (Movement click already cancels attack; this is a safety gate.)
       if (targeting.target) {
         // Do nothing this tick
       } else {
@@ -1562,7 +1466,7 @@ const ticker = createTicker({
         if (canAttack) {
           // const style = (weapon === "STAFF") ? "MAGE" : "RANGE";
 
-          // Simple range check (Chebyshev distance in world space)
+          // Simple range check - set to 15 at the moment. Can be reduced later if desired.
           const px = player.x + 0.5;
           const pz = player.y + 0.5;
           const bx = boss.mesh.position.x;
@@ -1594,7 +1498,7 @@ const ticker = createTicker({
       }
     }
 
-    // ===== Player damage hitsplat (existing behaviour) =====
+    // ===== Player damage hitsplat =====
     if (pendingDamageThisTick > 0) {
       spawnHitSplat({ value: pendingDamageThisTick, kind: "damage" });
       pendingDamageThisTick = 0;
@@ -1605,7 +1509,6 @@ const ticker = createTicker({
 function startFightLoop() {
   ticker.start();
   // Initial sync of player tile indicator
-  
 }
 
 
@@ -1629,7 +1532,6 @@ let last = performance.now();
 function animate(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-
   player.updateVisual(dt);
   tornadoes.updateVisual(dt);
   projectiles.updateVisual(dt);
@@ -1729,5 +1631,4 @@ function reset() {
 
   targeting.clear();
   player.setPos(5, 5);
-  
 }

@@ -1,4 +1,4 @@
-// ===== Tick controller (supports slow-mo) =====
+// ===== Tick controller =====
 export function createTicker({ baseTickMs = 600, onTick }) {
   let tickMs = baseTickMs;
   let timerId = null;
@@ -17,7 +17,7 @@ export function createTicker({ baseTickMs = 600, onTick }) {
   }
 
   function setSpeedPercent(pct) {
-    // pct: 25..100 (or wider if you want)
+    // pct: 25..100 
     const p = Math.max(5, Math.min(400, Number(pct) || 100));
     // 50% => tick is slower => tickMs doubles
     tickMs = baseTickMs / (p / 100);

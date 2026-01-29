@@ -44,7 +44,7 @@ export function createBoss(THREE, { scene, startX = 9, startY = 9, onAttack } = 
   const config = {
     attackSpeedTicks: 5,
     maxHit: 39,
-    startStyle: "RANGE", // boss attack style starts ranged (your existing behavior)
+    startStyle: "RANGE", // boss attack style starts ranged
     swapEvery: 4,        // swap attack style every 4 counted attacks
   };
 
@@ -88,7 +88,7 @@ export function createBoss(THREE, { scene, startX = 9, startY = 9, onAttack } = 
     combat.countedAttacks = 0;
   }
 
-  // --- NEW: protection prayer helpers ---
+  // --- Protection prayer helpers ---
   function setProtectionPrayer(next) {
     protection.active = (next === ProtectionPrayer.MAGE) ? ProtectionPrayer.MAGE : ProtectionPrayer.RANGE;
   }
