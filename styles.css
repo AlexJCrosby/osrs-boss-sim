@@ -614,8 +614,8 @@ body.sidebar-open .settings-tab-handle::before {
 
   letter-spacing: 0;  /* emojis hate spacing */
 
-  background: rgba(158, 175, 81, 0.65);
-  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(141, 141, 141, 0.241);
+  border: 1px solid rgba(0, 0, 0, 0.543);
   border-radius: 6px; /* subtle OSRS-like rounding */
 
   box-shadow:
