@@ -94,7 +94,7 @@ export function createPlayer(THREE, { scene, startX, startY }) {
     renderX = player.x;
     renderY = player.y;
 
-    // also reset animation so player doesn't "glide" after a teleport/reset
+    // also reset animation so player doesn't glide after a teleport/reset
     moveFromX = moveToX = renderX;
     moveFromY = moveToY = renderY;
     moveElapsed = tickSeconds;

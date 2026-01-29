@@ -183,7 +183,7 @@ export function createTornadoes(THREE, {
 
   function syncTornadoesTileIndicator() {
     if (!tileIndicator) return;
-    // (debug log optional)
+    // DEBUG:
     // const tiles = getTornadoTiles();
     // console.log("TTI sync tiles:", tiles.length, "active:", active, "tornadoes:", tornadoes.length);
     tileIndicator.sync();
@@ -230,7 +230,7 @@ export function createTornadoes(THREE, {
     if (idx < 0) return;
 
     const spawnTick = waveSpawnTick(idx);
-    const slamTick = spawnTick - slamLeadTicks;
+    const slamTick = spawnTick - slamLeadTicks; // optional: "slam" happens before spawn NOT IMPLEMENTED YET !!!
 
     if (fightTick !== spawnTick) return;
 
@@ -306,7 +306,7 @@ export function createTornadoes(THREE, {
       tornadoes.push(t);
     }
 
-    console.log(`Tornadoes spawned: ${count} (wave ${idx + 1}) at tick ${fightTick}`);
+    // DEBUG: console.log(`Tornadoes spawned: ${count} (wave ${idx + 1}) at tick ${fightTick}`);
     syncTornadoesTileIndicator();
   }
 
@@ -347,7 +347,7 @@ export function createTornadoes(THREE, {
     if (waveStartTick === null) return;
 
     if (fightTick >= waveStartTick + durationTicks) {
-      console.log("DESPAWN trigger", { fightTick, waveStartTick, durationTicks });
+      // DEBUG: console.log("DESPAWN trigger", { fightTick, waveStartTick, durationTicks });
       for (const t of tornadoes) scene.remove(t.mesh);
       tornadoes = [];
       active = false;

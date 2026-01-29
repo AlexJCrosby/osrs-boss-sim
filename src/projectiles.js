@@ -116,7 +116,6 @@ export function createProjectiles(THREE, { scene } = {}) {
 
       if (p.t >= 1) {
         scene.remove(p.mesh);
-        p.mesh.geometry.dispose?.(); // geometries are shared; safe no-op
 
         if (p.light) scene.remove(p.light);
 

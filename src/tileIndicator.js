@@ -1,7 +1,7 @@
 // Generic tile indicator
 export function createTileIndicator(THREE, {
   scene,
-  getTiles,           // () => Array<{x:number,y:number}>
+  getTiles,           
   config = {},
 }) {
   const {
@@ -49,7 +49,7 @@ export function createTileIndicator(THREE, {
     const z0 = z + inset;
     const z1 = z + 1 - inset;
 
-    // bottom, right, top, left (4 segments)
+    // bottom, right, top, left 
     positions.set(
       [
         x0, y, z0,  x1, y, z0,

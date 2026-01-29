@@ -30,13 +30,11 @@ const GameState = Object.freeze({
 });
 
 let state = GameState.LOBBY;
-let tickerId = null; // will hold setInterval id
 
 // ===== DOM / HUD =====
 const canvas = document.getElementById("game");
 const tickEl = document.getElementById("tick");
 const startBtn = document.getElementById("startBtn");
-const resetBtn = document.getElementById("resetBtn");
 
 // ===== Boss HP Bar =====
 const bossBar = document.createElement("div");
@@ -518,7 +516,6 @@ if (invGridEl) {
     if (def.type === "FOOD") {
       // 1) eat cooldown: once every 3 ticks
       if (playerAction.eatCd > 0) {
-        console.log("Can't eat yet. eatCd:", playerAction.eatCd);
         return;
       }
 
@@ -542,13 +539,12 @@ if (invGridEl) {
       // 5) re-render inventory
       renderInventory(invGridEl);
 
-      console.log("Ate:", stack.id, "heal:", def.heal, "eatCd:", playerAction.eatCd, "attackCd:", playerAction.attackCd);
       return;
     }
   });
 }
 
-// ===== Inventory: reset/seed helper =====
+// ===== Inventory: reset helper =====
     function resetInventoryToStarter() {
       if (!invGridEl) return;
 
@@ -559,7 +555,7 @@ if (invGridEl) {
       seedStarterInventoryFromSettings();
     }
 
-// ===== Prayer UI wiring =====
+// ===== Prayer UI =====
 const prayRangeBtn = document.getElementById("prayRange");
 const prayMageBtn = document.getElementById("prayMage");
 
@@ -1026,7 +1022,6 @@ function applyBossHit({ amount, style }) {
   updateBossBarUI();
   spawnBossHitSplat({ value: finalDmg, kind: finalDmg === 0 ? "splash" : "damage" });
 
-  console.log(`[BOSS HIT] style=${styleNorm} pray=${bossPray} rolled=${dmgRolled} final=${finalDmg} (bossHP ${bossHP}/${bossMaxHP})`);
 }
 
 godToggle.addEventListener("change", () => {
@@ -1119,16 +1114,13 @@ function applyHit(hit) {
   // Accumulate for a single hit splat at end of tick
   pendingDamageThisTick += mitigated;
 
-  console.log(`[HIT] ${source}/${style}: -${mitigated} HP (now ${currentHP}/${maxHP})`);
   updateHealthUI();
 
   if (currentHP <= 0) {
     if (godMode) {
-      console.log("God mode: lethal damage prevented, refilling HP");
       currentHP = maxHP;
       updateHealthUI();
     } else {
-      console.log("Player died (HP <= 0). Resetting...");
       reset();
     }
   }
@@ -1335,9 +1327,8 @@ let tick = 0;
 // ===== Tick damage aggregation (hit splats) =====
 let pendingDamageThisTick = 0;
 
-function cancelPlayerAttack(reason = "") {
+function cancelPlayerAttack() {
   if (playerCombat.wantsToAttackBoss) {
-    console.log("[ATTACK CANCELLED]", reason);
   }
   playerCombat.wantsToAttackBoss = false;
   playerCombat.attackStalled = true;
@@ -1348,8 +1339,6 @@ function onBossClicked() {
   targeting.clear(); // stops movement
   playerCombat.wantsToAttackBoss = true;
   playerCombat.attackStalled = false;
-
-  console.log("[ATTACK ARMED] Boss clicked");
 }
 
 // ===== Ground click cancels attacking (but boss-click does NOT reach here because it stops propagation) =====
