@@ -1,45 +1,28 @@
 // src/boss.js
 export function createBoss(THREE, { scene, startX = 9, startY = 9, onAttack } = {}) {
 
-
   // Semi-transparent so the danger floor can still be seen beneath it
   const material = new THREE.MeshStandardMaterial({
-    color: 0x66ccff,        // light blue (easy to distinguish from player)
+    color: 0x66ccff,
     transparent: true,
     opacity: 0.55,
-    depthWrite: false,      // helps avoid z-order issues with transparency
+    depthWrite: false,
   });
 
   // ===== Boss geometry (5x5 tiles footprint) =====
-    const BOSS_SIZE_TILES = 5;     // width/depth in tile units
-    const BOSS_HEIGHT = 1.2;       // keep height similar
+  const BOSS_SIZE_TILES = 5;
+  const BOSS_HEIGHT = 1.2;
 
-    const mesh = new THREE.Mesh(
+  const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(BOSS_SIZE_TILES, BOSS_HEIGHT, BOSS_SIZE_TILES),
     material
-);
+  );
 
-const state = {
-  x: startX,
-  y: startY,
-};
+  const state = { x: startX, y: startY };
 
-  // Put boss above floor, but below player (your player cube sits around y ~ 0.45)
-  // Adjust if needed.
   const BOSS_Y = BOSS_HEIGHT / 2;
-
-  // Make sure it draws "above" the danger floor visually
   mesh.renderOrder = 2;
-
   scene.add(mesh);
-
-  function randInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
-  // for boss standard attacks
-  const raw = randInt(1, 39);
-
 
   function sync() {
     mesh.position.set(state.x + 0.5, BOSS_Y, state.y + 0.5);
@@ -57,19 +40,31 @@ const state = {
     sync();
   }
 
-    // ===== Boss combat config =====
+  // ===== Boss combat config =====
   const config = {
     attackSpeedTicks: 5,
     maxHit: 39,
-    startStyle: "RANGE", // fight starts ranged
-    swapEvery: 4,        // swap every 4 counted attacks
+    startStyle: "RANGE", // boss attack style starts ranged (your existing behavior)
+    swapEvery: 4,        // swap attack style every 4 counted attacks
   };
 
   // ===== Boss combat state =====
   const combat = {
-    style: config.startStyle, // "RANGE" | "MAGE"
-    cooldown: config.attackSpeedTicks, // counts down each tick
-    countedAttacks: 0, // counts toward style swap
+    style: config.startStyle,            // "RANGE" | "MAGE"
+    cooldown: config.attackSpeedTicks,   // counts down each tick
+    countedAttacks: 0,                   // counts toward style swap
+  };
+
+  // ===== Boss protection prayer state =====
+  const ProtectionPrayer = Object.freeze({
+    RANGE: "RANGE",
+    MAGE: "MAGE",
+  });
+
+  const protection = {
+    active: ProtectionPrayer.RANGE, // will be randomized on resetProtectionPrayer()
+    offPrayerCount: 0,             // counts ONLY off-prayer player attacks
+    swapEveryOffPrayer: 6,
   };
 
   function randInt(min, max) {
@@ -80,7 +75,6 @@ const state = {
     combat.style = (combat.style === "RANGE") ? "MAGE" : "RANGE";
   }
 
-  // Call this whenever an attack should count toward the 4-attack swap rule
   function notifyCountedAttack(count = 1) {
     combat.countedAttacks += count;
     if (combat.countedAttacks % config.swapEvery === 0) {
@@ -88,56 +82,88 @@ const state = {
     }
   }
 
-  /**
-   * Reset boss combat state for a new fight.
-   * (Doesn't move the boss; that's still handled by reset/setPos.)
-   */
   function resetCombat() {
     combat.style = config.startStyle;
     combat.cooldown = config.attackSpeedTicks;
     combat.countedAttacks = 0;
   }
 
-  /**
-   * Update once per fight tick.
-   * onAttack is provided via createBoss options.
-   */
-  function update(/* fightTick */) {
-    // Count down and attack when ready
-    combat.cooldown -= 1;
+  // --- NEW: protection prayer helpers ---
+  function setProtectionPrayer(next) {
+    protection.active = (next === ProtectionPrayer.MAGE) ? ProtectionPrayer.MAGE : ProtectionPrayer.RANGE;
+  }
 
+  function toggleProtectionPrayer() {
+    protection.active = (protection.active === ProtectionPrayer.RANGE) ? ProtectionPrayer.MAGE : ProtectionPrayer.RANGE;
+  }
+
+  /**
+   * Call THIS on boss reset (NOT startFight), so the starting prayer is stable through fight start.
+   */
+  function resetProtectionPrayer() {
+    // Random initial prayer on reset
+    const start = (Math.random() < 0.5) ? ProtectionPrayer.RANGE : ProtectionPrayer.MAGE;
+    setProtectionPrayer(start);
+    protection.offPrayerCount = 0;
+  }
+
+  /**
+   * Called when the PLAYER performs an attack on the boss (even if 0 damage).
+   * Only OFF-prayer attacks (style != active prayer) count toward the 6-swap rule.
+   */
+  function notifyPlayerAttack({ style }) {
+    if (style !== "RANGE" && style !== "MAGE") return;
+
+    const isOffPrayer = style !== protection.active;
+    if (!isOffPrayer) return;
+
+    protection.offPrayerCount += 1;
+
+    if (protection.offPrayerCount % protection.swapEveryOffPrayer === 0) {
+      toggleProtectionPrayer();
+    }
+  }
+
+  function update(/* fightTick */) {
+    combat.cooldown -= 1;
     if (combat.cooldown > 0) return;
 
-    // Perform a standard attack
     const raw = randInt(1, config.maxHit);
 
-    // Emit attack event (main.js will convert to applyHit)
     if (typeof onAttack === "function") {
       onAttack({
-        style: combat.style,            // "RANGE" | "MAGE"
-        amount: raw,                    // 1..39
-        countsTowardBossSwap: true,     // standard attacks count
+        style: combat.style,        // "RANGE" | "MAGE"
+        amount: raw,                // 1..39
+        countsTowardBossSwap: true,
       });
     }
 
-    // Count it toward the swap rule (excluding stomp - stomp isn't implemented here)
     notifyCountedAttack(1);
-
-    // Reset cooldown
     combat.cooldown = config.attackSpeedTicks;
   }
 
-
   sync();
+
+  // IMPORTANT: ensure it has a prayer immediately, even before fight starts
+  resetProtectionPrayer();
 
   return {
     get x() { return state.x; },
     get y() { return state.y; },
-    setPos,
-    reset,
+
+    // combat
     resetCombat,
     notifyCountedAttack,
     update,
-    mesh, // exposed in case you want to tweak visuals later
+
+    // protection prayer
+    getProtectionPrayer() { return protection.active; },
+    resetProtectionPrayer,
+    notifyPlayerAttack,
+
+    // positioning / visuals
+    setPos,
+    reset,
+    mesh,
   };
 }

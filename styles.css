@@ -588,3 +588,41 @@ body.sidebar-open .settings-tab-handle::before {
      1px  1px 0 #000,
      0    2px 2px rgba(0,0,0,0.9);
 }
+
+/* ===== Overhead prayer indicators ===== */
+.overheadPrayer {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  z-index: 60;            /* above canvas, below boss bar (boss bar is 2000) */
+  pointer-events: none;
+  user-select: none;
+}
+
+.overheadPrayer.hidden {
+  display: none;
+}
+
+.overheadPrayerInner {
+  min-width: 56px;
+  height: 26px;
+  padding: 0 10px;
+
+  display: grid;
+  place-items: center;
+
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 8px;
+
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}

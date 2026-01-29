@@ -286,6 +286,34 @@ const hitSplatLayer = document.createElement("div");
 hitSplatLayer.className = "hitSplatLayer";
 document.body.appendChild(hitSplatLayer);
 
+// ===== Overhead prayer indicators (DOM overlay) =====
+function makePrayerOverheadEl(id) {
+  const el = document.createElement("div");
+  el.className = "overheadPrayer hidden";
+  el.id = id;
+
+  const inner = document.createElement("div");
+  inner.className = "overheadPrayerInner";
+  el.appendChild(inner);
+
+  document.body.appendChild(el);
+  return el;
+}
+
+const playerPrayerOverhead = makePrayerOverheadEl("playerPrayerOverhead");
+const bossPrayerOverhead = makePrayerOverheadEl("bossPrayerOverhead");
+
+function prayerLabel(pr) {
+  if (pr === Prayer.RANGE) return "RANGE";
+  if (pr === Prayer.MAGE) return "MAGE";
+  return "";
+}
+
+function setOverheadText(el, txt) {
+  const inner = el.querySelector(".overheadPrayerInner");
+  if (inner) inner.textContent = txt;
+}
+
 // ===== Player prayer state (MVP) =====
 const Prayer = Object.freeze({
   NONE: "NONE",
@@ -753,6 +781,47 @@ function worldToScreen(x, y, z, camera, canvas) {
   return { x: sx, y: sy, onScreen: v.z > -1 && v.z < 1 };
 }
 
+function updateOverheadPrayers() {
+  // --- Player overhead: only show when a prayer is active ---
+  const pLabel = prayerLabel(playerPrayer);
+  if (pLabel) {
+    const pScreen = worldToScreen(
+      player.renderX + 0.5,
+      1.55,
+      player.renderY + 0.5,
+      camera,
+      canvas
+    );
+
+    setOverheadText(playerPrayerOverhead, pLabel);
+    playerPrayerOverhead.classList.toggle("hidden", !pScreen.onScreen);
+    playerPrayerOverhead.style.left = `${pScreen.x}px`;
+    playerPrayerOverhead.style.top = `${pScreen.y}px`;
+  } else {
+    playerPrayerOverhead.classList.add("hidden");
+  }
+
+  // --- Boss overhead: ALWAYS visible (even in lobby) ---
+  const bossPr = boss.getProtectionPrayer?.() || "RANGE";
+  const bLabel = (bossPr === "MAGE") ? "MAGE" : "RANGE";
+
+  const wp = new THREE.Vector3();
+  boss.mesh.getWorldPosition(wp);
+
+  const bScreen = worldToScreen(
+    wp.x,
+    wp.y + 1.65,
+    wp.z,
+    camera,
+    canvas
+  );
+
+  setOverheadText(bossPrayerOverhead, bLabel);
+  bossPrayerOverhead.classList.toggle("hidden", !bScreen.onScreen);
+  bossPrayerOverhead.style.left = `${bScreen.x}px`;
+  bossPrayerOverhead.style.top = `${bScreen.y}px`;
+}
+
 // Active splats
 const hitSplats = [];
 
@@ -881,25 +950,31 @@ function resetBossHP() {
 
 }
 
-function applyBossHit({ amount }) {
+function applyBossHit({ amount, style }) {
   const raw = Number(amount);
   if (!Number.isFinite(raw)) return;
 
-  // Clamp into [0..] so we can display "splash" hits too
-  const dmg = Math.max(0, Math.floor(raw));
+  const dmgRolled = Math.max(0, Math.floor(raw)); // 0..max
+  const bossPray = boss.getProtectionPrayer?.();
 
-  // Reduce boss HP only if dmg > 0
-  if (dmg > 0) {
-    bossHP = Math.max(0, bossHP - dmg);
+  // Boss protection prayer: 100% mitigation if matched
+  const isProtectable = (style === HitStyle.RANGE || style === HitStyle.MAGE || style === "RANGE" || style === "MAGE");
+  const styleNorm = (style === HitStyle.MAGE) ? "MAGE" : (style === HitStyle.RANGE ? "RANGE" : style);
+
+  let finalDmg = dmgRolled;
+  if (isProtectable && (bossPray === styleNorm)) {
+    finalDmg = 0;
+  }
+
+  if (finalDmg > 0) {
+    bossHP = Math.max(0, bossHP - finalDmg);
   }
 
   updateBossBarUI();
-  // Spawn splat regardless (0 => splash)
-  spawnBossHitSplat({ value: dmg, kind: dmg === 0 ? "splash" : "damage" });
+  spawnBossHitSplat({ value: finalDmg, kind: finalDmg === 0 ? "splash" : "damage" });
 
-  console.log(`[BOSS HIT] -${dmg} (bossHP ${bossHP}/${bossMaxHP})`);
+  console.log(`[BOSS HIT] style=${styleNorm} pray=${bossPray} rolled=${dmgRolled} final=${finalDmg} (bossHP ${bossHP}/${bossMaxHP})`);
 }
-
 
 godToggle.addEventListener("change", () => {
   godMode = godToggle.checked;
@@ -1360,13 +1435,20 @@ const ticker = createTicker({
           const MAX_ATTACK_RANGE = 15;
 
           if (dist <= MAX_ATTACK_RANGE) {
+            const style = (weapon === "STAFF") ? "MAGE" : "RANGE";
+
             const maxHit = 25;
             const dmg = Math.floor(Math.random() * (maxHit + 1)); // 0..maxHit
 
-            applyBossHit({ amount: dmg });
+            // Notify boss about the player's attack attempt (counts off-prayer even if dmg is 0)
+            boss.notifyPlayerAttack?.({ style });
+
+            // Apply boss hit (boss prayer can force this to 0)
+            applyBossHit({ amount: dmg, style });
 
             // Put the weapon on cooldown
             playerAction.attackCd = playerCombat.weaponSpeed;
+
           }
         }
       }
@@ -1413,6 +1495,7 @@ function animate(now) {
   projectiles.updateVisual(dt);
   cameraCtl.update(dt);
   updateHitSplats(dt);
+  updateOverheadPrayers();
 
   renderer.render(scene, camera);
   
@@ -1468,6 +1551,8 @@ function reset() {
   projectiles.reset();
   resetBossHP();
   setBossBarVisible(false);
+  boss.resetProtectionPrayer?.();
+
 
 
   // On reset, go back to full HP of the chosen start value
