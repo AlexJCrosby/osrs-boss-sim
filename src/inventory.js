@@ -1,5 +1,4 @@
-// inventory.js (ES module)
-// ===== Inventory: Item defs + state =====
+// Inventory: Item defs + state 
 export const ITEM_DEFS = {
   STAFF: { id: "STAFF", name: "Staff", type: "WEAPON", stackable: false, icon: "🪄" },
   BOW: { id: "BOW", name: "Bow", type: "WEAPON", stackable: false, icon: "🏹" },
@@ -14,7 +13,7 @@ function makeItemStack(id, qty = 1) {
   return { id, qty };
 }
 
-// ===== Core helpers =====
+//  Core helpers 
 export function clearInventory() {
   inventory.slots.fill(null);
 }
@@ -49,7 +48,7 @@ export function removeOneFromSlot(slotIndex) {
   return true;
 }
 
-// ===== Rendering =====
+//  Rendering 
 export function renderInventory(invGridEl) {
   if (!invGridEl) return;
 

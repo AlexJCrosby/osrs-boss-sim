@@ -3,12 +3,12 @@ export function createDangerFloor(THREE, {
   scene,
   gridW,
   gridH,
-  getPlayerTile,        // () => ({x,y})
-  onPlayerDamaged,      // (amount) => void
+  getPlayerTile,       
+  onPlayerDamaged,      
   config = {},
 }) {
   const {
-    // When fight tick reaches this number, the danger floor first appears.
+    // First time the danger floor first appears is tick 12.
     spawnDelayTicks = 12,
 
     // Cycle: safe for 6 ticks, unsafe for 14 ticks, then move+reset.
@@ -25,7 +25,7 @@ export function createDangerFloor(THREE, {
     yOffset = 0.012,
   } = config;
 
-  // Arena must be divisible into 2x2 quadrants (12x12 -> 6x6 corners)
+  // Arena must be divisible into 2x2 quadrants
   const halfW = Math.floor(gridW / 2);
   const halfH = Math.floor(gridH / 2);
 
@@ -39,7 +39,7 @@ export function createDangerFloor(THREE, {
 
   const zoneSize = halfW; // 6 in a 12x12
 
-  // Visual: one instanced mesh drawing the full 6x6 overlay (36 tiles)
+  // one instanced mesh drawing the full overlay
   const geo = new THREE.PlaneGeometry(1, 1);
   geo.rotateX(-Math.PI / 2);
 
@@ -55,19 +55,19 @@ export function createDangerFloor(THREE, {
   mesh.frustumCulled = false;
   scene.add(mesh);
   mesh.renderOrder = 1;
-  // Hide by default until the fight starts / system is activated
+  // Hide by default until the fight starts 
   mesh.count = 0;
   mesh.instanceMatrix.needsUpdate = true;
 
 
   const m4 = new THREE.Matrix4();
 
-  // ----- internal state -----
-  let spawned = false;        // has it appeared yet this fight?
-  let active = false;         // should render / apply damage?
-  let cornerIndex = 0;        // 0..3
-  let cycleTick = 0;          // 1..(safe+unsafe), resets on move
-  let phase = "safe";         // "safe" | "unsafe"
+  // internal state 
+  let spawned = false;      
+  let active = false;        
+  let cornerIndex = 0;      
+  let cycleTick = 0;          
+  let phase = "safe";         
 
   function randInt(min, max) {
     // inclusive
@@ -153,7 +153,7 @@ export function createDangerFloor(THREE, {
         const x = c.ox + dx;
         const y = c.oy + dy;
 
-        // center each tile at (x+0.5, y+0.5)
+        // center each tile
         m4.makeTranslation(x + 0.5, yOffset, y + 0.5);
         mesh.setMatrixAt(i++, m4);
       }
@@ -169,7 +169,7 @@ export function createDangerFloor(THREE, {
     cycleTick = 0;
     cornerIndex = 0;
     setPhase("safe");
-    render(); // clears visuals (count=0)
+    render(); // clears visuals 
   }
 
   return {
@@ -182,10 +182,8 @@ export function createDangerFloor(THREE, {
       applyDamageIfNeeded();
     },
 
-    // Call after update
     render,
 
-    // Call on Start/Reset
     reset,
 
     // For debugging

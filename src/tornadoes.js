@@ -52,7 +52,7 @@ export function createTornadoes(THREE, {
   }
 
 
-  // ---- helpers ----
+  // - helpers -
   function randInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
@@ -106,7 +106,7 @@ export function createTornadoes(THREE, {
     };
   }
 
-  // OSRS-style 1-step: can move diagonally in a single step
+  // diagonal movement in a single step
   function greedyStepToward(x, y, tx, ty) {
     const dx = tx - x;
     const dy = ty - y;
@@ -115,7 +115,7 @@ export function createTornadoes(THREE, {
     return { x, y };
   }
 
-  // ---- visuals ----
+  // - visuals -
   const material = new THREE.MeshStandardMaterial({
     color,
     transparent: true,
@@ -146,16 +146,14 @@ export function createTornadoes(THREE, {
     return g;
   }
 
-  // ---- state ----
+  // - state -
   let active = false;
   let waveStartTick = null;
   let waveIndex = -1;
 
-  // Each tornado:
-  // { x, y, mesh, renderX, renderY, moveFromX, moveFromY, moveToX, moveToY, moveElapsed }
   let tornadoes = [];
 
-  // ===== Tornadoes tile indicator (owned by tornadoes) =====
+  //  Tornadoes tile indicator 
   let tileIndicator = null;
 
   function getTornadoTiles() {

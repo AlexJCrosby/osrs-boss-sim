@@ -18,7 +18,7 @@ import {
   renderInventory
 } from "./src/inventory.js";
 
-// ===== Config =====
+//  Config 
 const GRID_W = 12;
 const GRID_H = 12;
 const TICK_MS = 600;
@@ -31,12 +31,12 @@ const GameState = Object.freeze({
 
 let state = GameState.LOBBY;
 
-// ===== DOM / HUD =====
+//  DOM / HUD 
 const canvas = document.getElementById("game");
 const tickEl = document.getElementById("tick");
 const startBtn = document.getElementById("startBtn");
 
-// ===== Boss HP Bar =====
+//  Boss HP Bar 
 const bossBar = document.createElement("div");
 bossBar.className = "bossTopBar hidden";
 
@@ -78,7 +78,7 @@ const settingsAccessibilityEl = document.getElementById("settingsAccessibility")
 const settingsIndicatorsEl = document.getElementById("settingsIndicators");
 const settingsKeybindsEl = document.getElementById("settingsKeybinds");
 
-// ===== Keybinds (persisted) =====
+//  Keybinds (persisted) 
 function normalizeKeyForBind(k) {
   if (!k) return "";
   return String(k).toLowerCase();
@@ -89,7 +89,7 @@ const keybinds = {
   inventory: normalizeKeyForBind(localStorage.getItem("kb_openInventory") || "2"),
 };
 
-// ===== Sidebar helpers =====
+//  Sidebar helpers 
 function addSettingRow(parent, labelText, controls) {
   const row = document.createElement("div");
   row.className = "settings-row";
@@ -125,14 +125,14 @@ if (settingsTabHandle) {
   });
 }
 
-// ===== Player: equipment + action timers =====
+//  Player: equipment + action timers 
 const playerAction = {
   equippedWeapon: null, // "STAFF" | "BOW" | null
   attackCd: 0,          // ticks until next attack can fire
   eatCd: 0,             // ticks until can eat again
 };
 
-// ===== Player combat control =====
+//  Player combat control 
 const playerCombat = {
   wantsToAttackBoss: false, // set when boss is clicked
   attackStalled: true,      // set true when player moves
@@ -140,7 +140,7 @@ const playerCombat = {
   weaponSpeed: 4,
 };
 
-// ===== Health UX controls (persisted) =====
+//  Health UX controls (persisted) 
 const hpLabel = document.createElement("span");
 hpLabel.className = "hint";
 hpLabel.textContent = "Start HP:";
@@ -152,7 +152,7 @@ hpInput.max = "99";
 hpInput.step = "1";
 hpInput.style.width = "64px";
 
-// ===== Start fish (persisted) =====
+//  Start fish (persisted) 
 const fishInput = document.createElement("input");
 fishInput.type = "number";
 fishInput.min = "0";
@@ -216,7 +216,7 @@ showBarToggle.addEventListener("change", () => {
   updateHealthUI(); 
 });
 
-// ===== Boss click detection (intercepts BEFORE targeting.js mousedown) =====
+//  Boss click detection (intercepts BEFORE targeting.js mousedown) 
 const raycaster = new THREE.Raycaster();
 const mouseNDC = new THREE.Vector2();
 
@@ -249,7 +249,7 @@ canvas.addEventListener(
   true
 );
 
-// ===== Health UI (orb + optional HP bar) =====
+//  Health UI (orb + optional HP bar) 
 const healthHud = document.createElement("div");
 healthHud.className = "healthHud";
 
@@ -270,12 +270,12 @@ hpBar.appendChild(hpBarFill);
 healthHud.append(hpBar, hpOrb);
 document.body.appendChild(healthHud);
 
-// ===== Hit splats =====
+//  Hit splats 
 const hitSplatLayer = document.createElement("div");
 hitSplatLayer.className = "hitSplatLayer";
 document.body.appendChild(hitSplatLayer);
 
-// ===== Overhead prayer indicators (DOM overlay) =====
+//  Overhead prayer indicators (DOM overlay) 
 function makePrayerOverheadEl(id) {
   const el = document.createElement("div");
   el.className = "overheadPrayer hidden";
@@ -304,14 +304,14 @@ function setOverheadText(el, txt) {
   if (inner) inner.textContent = txt;
 }
 
-// ===== Player prayer state =====
+//  Player prayer state 
 const Prayer = Object.freeze({
   NONE: "NONE",
   RANGE: "RANGE",
   MAGE: "MAGE",
 });
 
-// ===== 3D Prayer Sprites (stable during camera pans) =====
+//  3D Prayer Sprites (stable during camera pans) 
 function makePrayerSpriteTexture(THREE, emoji) {
   const c = document.createElement("canvas");
   c.width = 64;
@@ -386,7 +386,7 @@ function setSpritePrayer(sprite, pr) {
 
 let playerPrayer = Prayer.NONE;
 
-// ===== Side panel tabs (Prayer / Inventory) =====
+//  Side panel tabs (Prayer / Inventory) 
 const tabPrayerBtn = document.getElementById("tabPrayer");
 const tabInventoryBtn = document.getElementById("tabInventory");
 const prayerTabEl = document.getElementById("prayerTab");
@@ -410,7 +410,7 @@ function setActiveSideTab(tabName) {
   }
 }
 
-// ===== Global keybind handling for side tabs =====
+//  Global keybind handling for side tabs 
 window.addEventListener("keydown", (e) => {
   if (e.repeat) return;
 
@@ -442,7 +442,7 @@ if (tabInventoryBtn) tabInventoryBtn.addEventListener("click", () => setActiveSi
 // Default tab viewed on load
 setActiveSideTab("prayer");
 
-// ===== Inventory grid placeholders (28 slots) =====
+//  Inventory grid placeholders (28 slots) 
 const invGridEl = document.getElementById("invGrid");
 
 if (invGridEl) {
@@ -472,12 +472,12 @@ function seedStarterInventoryFromSettings() {
 }
 
 
-// ===== Inventory: seed + first render =====
+//  Inventory: seed + first render 
 if (invGridEl) {
   seedStarterInventoryFromSettings();
 }
 
-// ===== Inventory: click -> equip/eat =====
+//  Inventory: click -> equip/eat 
 if (invGridEl) {
   invGridEl.addEventListener("click", (e) => {
     const slotEl = e.target.closest(".inv-slot");
@@ -544,7 +544,7 @@ if (invGridEl) {
   });
 }
 
-// ===== Inventory: reset helper =====
+//  Inventory: reset helper 
     function resetInventoryToStarter() {
       if (!invGridEl) return;
 
@@ -555,7 +555,7 @@ if (invGridEl) {
       seedStarterInventoryFromSettings();
     }
 
-// ===== Prayer UI =====
+//  Prayer UI 
 const prayRangeBtn = document.getElementById("prayRange");
 const prayMageBtn = document.getElementById("prayMage");
 
@@ -601,7 +601,7 @@ function splatSvgDataUri(fill, stroke) {
 const SPLAT_RED_BG = splatSvgDataUri("#b40000", "#3b0000");
 const SPLAT_BLUE_BG = splatSvgDataUri("#1a52d6", "#0b1b4a");
 
-// ===== God mode (training mode) =====
+//  God mode (training mode) 
 const godToggle = document.createElement("input");
 godToggle.type = "checkbox";
 
@@ -609,7 +609,7 @@ godToggle.type = "checkbox";
 const storedGodMode = localStorage.getItem("godMode");
 godToggle.checked = storedGodMode === "1";
 
-// ===== Slow-mo speed control (persisted) =====
+//  Slow-mo speed control (persisted) 
 const speedSlider = document.createElement("input");
 speedSlider.type = "range";
 speedSlider.min = "25";
@@ -634,13 +634,13 @@ speedSlider.value = String(startSpeed);
 speedInput.value = String(startSpeed);
 
 
-// ===== Inject into LEFT sidebar
+//  Inject into LEFT sidebar
 if (settingsAccessibilityEl) {
   addSettingRow(settingsAccessibilityEl, "God mode", [godToggle]);
   addSettingRow(settingsAccessibilityEl, "Speed", [speedSlider, speedInputWrap]);
 }
 
-// ===== Keybind inputs
+//  Keybind inputs
 const kbPrayer = document.createElement("input");
 kbPrayer.type = "text";
 kbPrayer.maxLength = 16;
@@ -682,7 +682,7 @@ if (settingsKeybindsEl) {
 }
 
 
-// ===== HUD helpers =====
+//  HUD helpers 
 function clamp255(v) {
   v = Number(v);
   if (!Number.isFinite(v)) return 255;
@@ -699,7 +699,7 @@ function normalizeHex(s) {
 }
 
 
-// ===== Player Tile Indicator UI =====
+//  Player Tile Indicator UI 
 const ptiToggle = document.createElement("input");
 ptiToggle.type = "checkbox";
 ptiToggle.checked = (localStorage.getItem("ptiEnabled") ?? "1") === "1";
@@ -732,7 +732,7 @@ if (settingsIndicatorsEl) {
   addSettingRow(settingsIndicatorsEl, "Player tile", [ptiToggle, ptiColor, ptiHex, ptiOpacity, ptiOpacityNum]);
 }
 
-// !!! ===== Tornado Tile Indicator UI ===== !!! 
+// !!!  Tornado Tile Indicator UI  !!! 
 const ttiLabel = document.createElement("label");
 ttiLabel.className = "hint";
 ttiLabel.style.display = "inline-flex";
@@ -827,7 +827,7 @@ ttiOpacityNum.addEventListener("change", () => {
 });
 
 
-// ===== Utility: world to screen coords =====
+//  Utility: world to screen coords 
 function worldToScreen(x, y, z, camera, canvas) {
   const v = new THREE.Vector3(x, y, z);
   v.project(camera);
@@ -838,7 +838,7 @@ function worldToScreen(x, y, z, camera, canvas) {
 }
 
 
-// ===== Overhead prayer smoothing (prevents jitter during camera pan) =====
+//  Overhead prayer smoothing (prevents jitter during camera pan) 
 const overheadSmooth = {
   player: { x: null, y: null },
   boss: { x: null, y: null },
@@ -875,7 +875,7 @@ function setOverheadTransform(el, smoothState, targetX, targetY) {
 // Active splats
 const hitSplats = [];
 
-// ===== Hit splats: per-frame update =====
+//  Hit splats: per-frame update 
 function updateHitSplats(dt) {
   for (let i = hitSplats.length - 1; i >= 0; i--) {
     const s = hitSplats[i];
@@ -965,7 +965,7 @@ function spawnBossHitSplat({ value, kind = "damage" }) {
 }
 
 
-// ===== Speed control =====
+//  Speed control 
 function applySpeedPercent(pct) {
   const p = Math.min(100, Math.max(25, Number(pct) || 100));
 
@@ -988,7 +988,7 @@ let maxHP = Number(hpInput.value);
 let currentHP = maxHP;
 let godMode = godToggle.checked;
 
-// ===== Boss HP =====
+//  Boss HP 
 let bossMaxHP = 1000;
 let bossHP = bossMaxHP;
 
@@ -1050,7 +1050,7 @@ function updateHealthUI() {
 }
 updateHealthUI();
 
-// ===== Hit pipeline (ALL damage goes through applyHit) =====
+//  Hit pipeline through applyhit()
 const HitSource = Object.freeze({
   FLOOR: "FLOOR",
   TORNADO: "TORNADO",
@@ -1091,8 +1091,7 @@ function mitigateHit(hit) {
 
 
 /**
- * Unified damage entry point.
- * All systems (danger floor, tornadoes, boss, etc.) call THIS.
+ * damage entry point.
  */
 function applyHit(hit) {
   if (!hit) return;
@@ -1135,7 +1134,7 @@ startBtn.addEventListener("click", startFight);
 // Prevent right-click menu
 canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
-// ===== Renderer / Scene / Camera =====
+// Renderer / Scene / Camera 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
 
@@ -1144,13 +1143,13 @@ scene.background = new THREE.Color(0x0f1115);
 
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 200);
 
-// ===== Lights =====
+// Lights
 scene.add(new THREE.AmbientLight(0xffffff, 0.7));
 const dir = new THREE.DirectionalLight(0xffffff, 0.9);
 dir.position.set(10, 20, 10);
 scene.add(dir);
 
-// ===== Arena =====
+// Arena
 const arena = createArena(THREE, {
   scene,
   canvas,
@@ -1159,17 +1158,17 @@ const arena = createArena(THREE, {
   gridH: GRID_H,
 });
 
-// ===== Player =====
+// Player 
 const player = createPlayer(THREE, {
   scene,
   startX: 5,
   startY: 5,
 });
 
-// ===== Projectiles =====
+//  Projectiles 
 const projectiles = createProjectiles(THREE, { scene });
 
-// ===== Player Tile Indicator instance (owned by player) =====
+//  Player Tile Indicator instance (owned by player) 
 player.createPlayerTileIndicator({
   enabled: (localStorage.getItem("ptiEnabled") ?? "1") === "1",
   color: localStorage.getItem("ptiColor") || "#FFB03F",
@@ -1208,7 +1207,7 @@ function handleBossAttack({ style, amount }) {
 }
 
 
-// ===== Boss =====
+//  Boss 
 const boss = createBoss(THREE, {
   scene,
   startX: 9,
@@ -1216,7 +1215,7 @@ const boss = createBoss(THREE, {
   onAttack: handleBossAttack,
 });
 
-// ===== Create prayer sprite textures + sprites =====
+//  Create prayer sprite textures + sprites 
 prayerTexRange = makePrayerSpriteTexture(THREE, "🏹");
 prayerTexMage  = makePrayerSpriteTexture(THREE, "🔥");
 
@@ -1231,7 +1230,7 @@ setSpritePrayer(playerPrayerSprite, playerPrayer);
 setSpritePrayer(bossPrayerSprite, boss.getProtectionPrayer?.() === "MAGE" ? Prayer.MAGE : Prayer.RANGE);
 
 
-// ===== Targeting (target + ring + click-to-set) =====
+//  Targeting (target + ring + click-to-set) 
 const targeting = createTargeting(THREE, {
   scene,
   canvas,
@@ -1239,7 +1238,7 @@ const targeting = createTargeting(THREE, {
   pickTileFromMouse: arena.pickTileFromMouse,
 });
 
-// ===== Danger Floor =====
+//  Danger Floor 
 const dangerFloor = createDangerFloor(THREE, {
   scene,
   gridW: GRID_W,
@@ -1264,7 +1263,7 @@ const dangerFloor = createDangerFloor(THREE, {
   },
 });
 
-// ===== Tornadoes =====
+//  Tornadoes 
 const tornadoes = createTornadoes(THREE, {
   scene,
   gridW: GRID_W,
@@ -1300,7 +1299,7 @@ const tornadoes = createTornadoes(THREE, {
 
 
 
-// ===== Tornado Tile Indicator instance (owned by tornadoes) =====
+//  Tornado Tile Indicator instance (owned by tornadoes) 
 tornadoes.createTornadoesTileIndicator({
   enabled: (localStorage.getItem("ttiEnabled") ?? "1") === "1",
   color: localStorage.getItem("ttiColor") || "#00FF66",
@@ -1311,7 +1310,7 @@ tornadoes.createTornadoesTileIndicator({
   maxTiles: 64,
 });
 
-// ===== Camera controller =====
+//  Camera controller 
 const cameraCtl = createOrbitCameraController(THREE, {
   canvas,
   camera,
@@ -1321,10 +1320,10 @@ const cameraCtl = createOrbitCameraController(THREE, {
 // Register wheel once (not per-frame)
 cameraCtl.attachZoomWheel();
 
-// ===== Tick loop (movement) =====
+//  Tick loop (movement) 
 let tick = 0;
 
-// ===== Tick damage aggregation (hit splats) =====
+//  Tick damage aggregation (hit splats) 
 let pendingDamageThisTick = 0;
 
 function cancelPlayerAttack() {
@@ -1341,7 +1340,7 @@ function onBossClicked() {
   playerCombat.attackStalled = false;
 }
 
-// ===== Ground click cancels attacking (but boss-click does NOT reach here because it stops propagation) =====
+//  Ground click cancels attacking (but boss-click does NOT reach here because it stops propagation) 
 canvas.addEventListener("mousedown", (e) => {
   if (e.button !== 0) return;
   if (state !== GameState.FIGHT) return;
@@ -1408,11 +1407,11 @@ const ticker = createTicker({
     tick++;
     tickEl.textContent = String(tick);
 
-    // ===== Player action timers: tick down =====
+    //  Player action timers: tick down 
     playerAction.attackCd = Math.max(0, playerAction.attackCd - 1);
     playerAction.eatCd = Math.max(0, playerAction.eatCd - 1);
 
-    // ===== Movement =====
+    //  Movement 
     const prevX = player.x;
     const prevY = player.y;
 
@@ -1432,7 +1431,7 @@ const ticker = createTicker({
     // Sync player tile indicator to player position
     player.syncTileIndicator();
 
-    // ===== Environment systems =====
+    //  Environment systems 
     dangerFloor.update(tick);
     dangerFloor.render();
 
@@ -1441,7 +1440,7 @@ const ticker = createTicker({
     // Boss: update once per fight tick
     boss.update(tick);
 
-    // ===== Player attacks boss =====
+    //  Player attacks boss 
     if (playerCombat.wantsToAttackBoss) {
       // If player is currently pathing / has a movement intent, do not attack
       if (targeting.target) {
@@ -1487,7 +1486,7 @@ const ticker = createTicker({
       }
     }
 
-    // ===== Player damage hitsplat =====
+    //  Player damage hitsplat 
     if (pendingDamageThisTick > 0) {
       spawnHitSplat({ value: pendingDamageThisTick, kind: "damage" });
       pendingDamageThisTick = 0;
@@ -1505,7 +1504,7 @@ function stopFightLoop() {
   ticker.stop();
 }
 
-// ===== Resize + render loop =====
+//  Resize + render loop 
 function onResize() {
   const rect = canvas.getBoundingClientRect();
   const w = Math.max(1, Math.floor(rect.width));
@@ -1527,7 +1526,7 @@ function animate(now) {
   cameraCtl.update(dt);
   updateHitSplats(dt);
 
-    // ===== Update prayer sprites (stable in 3D) =====
+    //  Update prayer sprites (stable in 3D) 
     // Player
     if (playerPrayerSprite) {
       playerPrayerSprite.position.set(player.renderX + 0.5, 1.55, player.renderY + 0.5);
@@ -1552,7 +1551,7 @@ function animate(now) {
 }
 requestAnimationFrame(animate);
 
-// ===== Game State =====
+//  Game State 
 function startFight() {
   resetBossHP();
   resetInventoryToStarter();
@@ -1586,7 +1585,7 @@ function startFight() {
 }
 
 
-// ===== Reset =====
+//  Reset 
 function reset() {
   stopFightLoop();
 

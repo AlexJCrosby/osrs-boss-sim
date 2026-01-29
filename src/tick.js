@@ -1,4 +1,4 @@
-// ===== Tick controller =====
+//  Tick controller 
 export function createTicker({ baseTickMs = 600, onTick }) {
   let tickMs = baseTickMs;
   let timerId = null;

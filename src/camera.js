@@ -20,11 +20,11 @@ export function createOrbitCameraController(THREE, { canvas, camera, getFocus })
     return a + (b - a) * t;
   }
 
-  // --- Smoothed camera focus (prevents snapping when logical tile updates ---
+  //  Smoothed camera focus prevent snapping  
   let smoothFx = null;
   let smoothFz = null;
-  const FOCUS_Y = 0.45;   // keep constant 
-  const FOCUS_SMOOTH = 2; // lower = floatier, higher = tighter
+  const FOCUS_Y = 0.45;   
+  const FOCUS_SMOOTH = 2; 
 
   // Alt + RMB drag
   let dragging = false;

@@ -71,7 +71,7 @@ canvas#game {
 }
 
 
-/* ===== Left settings sidebar (overlay drawer) ===== */
+/*  Left settings sidebar (overlay drawer)  */
 .settings-sidebar {
   position: fixed;
   left: 0;
@@ -181,7 +181,7 @@ body.sidebar-open .settings-sidebar {
 .settings-sidebar input[type="range"] { width: 170px; }
 
 
-/* ===== Sidebar tab handle ===== */
+/*  Sidebar tab handle  */
 .settings-tab-handle {
   cursor: pointer;
   position: fixed;
@@ -229,7 +229,7 @@ body.sidebar-open .settings-tab-handle::before {
 }
 
 
-/* ===== Health UI (orb + bar) ===== */
+/*  Health UI (orb + bar)  */
 .healthHud {
   position: fixed;
   right: 30px;
@@ -312,7 +312,7 @@ body.sidebar-open .settings-tab-handle::before {
   background: linear-gradient(to top, #7f0000, #ff2b2b);
 }
 
-/* ===== Hit splats ===== */
+/*  Hit splats  */
 .hitSplatLayer {
   position: fixed;
   inset: 0;
@@ -348,7 +348,7 @@ body.sidebar-open .settings-tab-handle::before {
   text-shadow: 0 2px 0 rgba(0,0,0,0.9);
 }
 
-/* ===== Prayer UI (OSRS-style tab overlay) ===== */
+/*  Prayer UI (OSRS-style tab overlay)  */
 .prayer-ui {
   position: relative;
   width: 100%;
@@ -391,7 +391,7 @@ body.sidebar-open .settings-tab-handle::before {
   border-radius: 8px;
 }
 
-/* ===== Side panel shell (tabs + content container) ===== */
+/*  Side panel shell (tabs + content container)  */
 .side-panel {
   position: fixed;
   right: 18px;
@@ -445,7 +445,7 @@ body.sidebar-open .settings-tab-handle::before {
   display: none !important;
 }
 
-/* ===== Inventory placeholder view ===== */
+/*  Inventory placeholder view  */
 .inventory-ui {
   position: relative;
   padding: 14px;
@@ -488,7 +488,7 @@ body.sidebar-open .settings-tab-handle::before {
   text-shadow: 0 2px 0 rgba(0,0,0,0.9);
 }
 
-/* ===== Equipped weapon indicator ===== */
+/*  Equipped weapon indicator  */
 .equipped-indicator {
   margin-bottom: 10px;
   padding: 8px 10px;
@@ -519,7 +519,7 @@ body.sidebar-open .settings-tab-handle::before {
   pointer-events: none;
 }
 
-/* ===== Boss HP Bar Overlay ===== */
+/*  Boss HP Bar Overlay  */
 .bossTopBar {
   position: fixed;
   top: 60px;

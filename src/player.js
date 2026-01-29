@@ -8,9 +8,8 @@ export function createPlayer(THREE, { scene, startX, startY }) {
   let renderX = player.x;
   let renderY = player.y;
   
-
-    // --- Tick-length movement animation so it glides over the whole tick ---
-    let tickSeconds = 0.6; // matches 0.6s tick
+    //  Tick-length movement animation so it glides between tiles
+    let tickSeconds = 0.6; 
     let moveFromX = renderX, moveFromY = renderY;
     let moveToX = renderX, moveToY = renderY;
     let moveElapsed = tickSeconds;
@@ -103,7 +102,6 @@ export function createPlayer(THREE, { scene, startX, startY }) {
     syncTileIndicator();
   }
 
-  // OSRS-style stepping: a "step" can be diagonal (x and y can change together).
   // speed = tiles per tick (2 for player while run is active)
   function stepToward(target, speed, gridW, gridH) {
     if (!target) return;
@@ -132,7 +130,7 @@ export function createPlayer(THREE, { scene, startX, startY }) {
     moveElapsed = Math.min(tickSeconds, moveElapsed + dt);
     const t = moveElapsed / tickSeconds;
 
-    const u = t; // linear
+    const u = t; 
 
     renderX = lerp(moveFromX, moveToX, u);
     renderY = lerp(moveFromY, moveToY, u);

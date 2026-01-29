@@ -1,4 +1,3 @@
-// src/boss.js
 export function createBoss(THREE, { scene, startX = 9, startY = 9, onAttack } = {}) {
 
   // Semi-transparent so the danger floor can still be seen beneath it
@@ -9,7 +8,7 @@ export function createBoss(THREE, { scene, startX = 9, startY = 9, onAttack } = 
     depthWrite: false,
   });
 
-  // ===== Boss geometry (5x5 tiles footprint) =====
+  //  Boss geometry (5x5 tiles footprint) 
   const BOSS_SIZE_TILES = 5;
   const BOSS_HEIGHT = 1.2;
 
@@ -40,7 +39,7 @@ export function createBoss(THREE, { scene, startX = 9, startY = 9, onAttack } = 
     sync();
   }
 
-  // ===== Boss combat config =====
+  //  Boss combat config 
   const config = {
     attackSpeedTicks: 5,
     maxHit: 39,
@@ -48,14 +47,14 @@ export function createBoss(THREE, { scene, startX = 9, startY = 9, onAttack } = 
     swapEvery: 4,        // swap attack style every 4 counted attacks
   };
 
-  // ===== Boss combat state =====
+  //  Boss combat state 
   const combat = {
     style: config.startStyle,            // "RANGE" | "MAGE"
     cooldown: config.attackSpeedTicks,   // counts down each tick
     countedAttacks: 0,                   // counts toward style swap
   };
 
-  // ===== Boss protection prayer state =====
+  //  Boss protection prayer state 
   const ProtectionPrayer = Object.freeze({
     RANGE: "RANGE",
     MAGE: "MAGE",
@@ -88,7 +87,7 @@ export function createBoss(THREE, { scene, startX = 9, startY = 9, onAttack } = 
     combat.countedAttacks = 0;
   }
 
-  // --- Protection prayer helpers ---
+  //  Protection prayer helpers 
   function setProtectionPrayer(next) {
     protection.active = (next === ProtectionPrayer.MAGE) ? ProtectionPrayer.MAGE : ProtectionPrayer.RANGE;
   }
