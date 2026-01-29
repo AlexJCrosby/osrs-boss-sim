@@ -363,6 +363,22 @@ function makePrayerSprite(THREE, texture) {
   return spr;
 }
 
+function setSpriteConstantScreenSize(sprite, camera, desiredPx, canvas) {
+  if (!sprite) return;
+
+  // How many world units correspond to 1 pixel at the sprite's distance?
+  const dist = camera.position.distanceTo(sprite.position);
+
+  // Vertical size of view at that distance
+  const vFovRad = (camera.fov * Math.PI) / 180;
+  const viewHeightWorld = 2 * Math.tan(vFovRad / 2) * dist;
+
+  const pxToWorld = viewHeightWorld / canvas.clientHeight;
+  const sizeWorld = desiredPx * pxToWorld;
+
+  sprite.scale.set(sizeWorld, sizeWorld, 1);
+}
+
 // Will be created after THREE/scene exist:
 let playerPrayerSprite = null;
 let bossPrayerSprite = null;
@@ -1625,6 +1641,7 @@ function animate(now) {
     if (playerPrayerSprite) {
       playerPrayerSprite.position.set(player.renderX + 0.5, 1.55, player.renderY + 0.5);
       setSpritePrayer(playerPrayerSprite, playerPrayer);
+      setSpriteConstantScreenSize(playerPrayerSprite, camera, 36, renderer.domElement);
     }
 
     // Boss
@@ -1632,7 +1649,7 @@ function animate(now) {
       const wp = new THREE.Vector3();
       boss.mesh.getWorldPosition(wp);
       bossPrayerSprite.position.set(wp.x, wp.y + 1.65, wp.z);
-
+      setSpriteConstantScreenSize(bossPrayerSprite, camera, 36, renderer.domElement);
       const bossPr = boss.getProtectionPrayer?.() || "RANGE";
       setSpritePrayer(bossPrayerSprite, bossPr === "MAGE" ? Prayer.MAGE : Prayer.RANGE);
     }

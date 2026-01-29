@@ -608,8 +608,8 @@ body.sidebar-open .settings-tab-handle::before {
 }
 
 .overheadPrayerInner {
-  width: 40px;        /* square */
-  height: 40px;       /* square */
+  width: 60px;        /* square */
+  height: 60px;       /* square */
 
   display: grid;
   place-items: center;
