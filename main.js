@@ -825,6 +825,7 @@ function updateOverheadPrayers() {
   const bossPr = boss.getProtectionPrayer?.() || "RANGE";
   const bLabel = (bossPr === "MAGE") ? "🔥" : "🏹";
 
+
   const wp = new THREE.Vector3();
   boss.mesh.getWorldPosition(wp);
 
