@@ -320,6 +320,66 @@ const Prayer = Object.freeze({
   MAGE: "MAGE",
 });
 
+// ===== 3D Prayer Sprites (stable during camera pans) =====
+function makePrayerSpriteTexture(THREE, emoji) {
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 64;
+
+  const ctx = c.getContext("2d");
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  // background square
+  ctx.fillStyle = "rgba(0,0,0,0.65)";
+  ctx.fillRect(0, 0, 64, 64);
+
+  // subtle border
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, 62, 62);
+
+  // emoji
+  ctx.font = "44px system-ui, Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(emoji, 32, 34);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function makePrayerSprite(THREE, texture) {
+  const mat = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,   // keeps it visible
+    depthWrite: false,
+  });
+
+  const spr = new THREE.Sprite(mat);
+  spr.renderOrder = 999;
+  spr.scale.set(1, 1, 1); // size in world units; tweak if needed
+  return spr;
+}
+
+// Will be created after THREE/scene exist:
+let playerPrayerSprite = null;
+let bossPrayerSprite = null;
+let prayerTexRange = null;
+let prayerTexMage = null;
+
+function setSpritePrayer(sprite, pr) {
+  if (!sprite) return;
+  if (pr === Prayer.MAGE) sprite.material.map = prayerTexMage;
+  else if (pr === Prayer.RANGE) sprite.material.map = prayerTexRange;
+  else sprite.material.map = null;
+
+  sprite.visible = !!sprite.material.map;
+  sprite.material.needsUpdate = true;
+}
+
+
 // Default for now (until UI exists)
 let playerPrayer = Prayer.NONE;
 
@@ -807,25 +867,30 @@ const overheadSmooth = {
 
 function setOverheadTransform(el, smoothState, targetX, targetY) {
   const dpr = window.devicePixelRatio || 1;
+  const tx = Math.round(targetX * dpr) / dpr;
+  const ty = Math.round(targetY * dpr) / dpr;
 
-  // Initialize instantly on first use (prevents pop-in)
   if (smoothState.x == null || smoothState.y == null) {
-    smoothState.x = targetX;
-    smoothState.y = targetY;
+    smoothState.x = tx;
+    smoothState.y = ty;
   }
 
-  // Smooth factor: higher = snappier, lower = smoother.
-  // 0.35 is a good "stop jitter but still responsive" value.
-  const a = 0.35;
-  smoothState.x += (targetX - smoothState.x) * a;
-  smoothState.y += (targetY - smoothState.y) * a;
+  const dx = tx - smoothState.x;
+  const dy = ty - smoothState.y;
 
-  // Snap to device pixel grid (prevents shimmer)
-  const sx = Math.round(smoothState.x * dpr) / dpr;
-  const sy = Math.round(smoothState.y * dpr) / dpr;
+  const DEADZONE_PX = 1.0;   // ignore tiny jitters
+  const FOLLOW = 1;        // very snappy (minimal lag)
 
-  // Anchor over head (centered, above)
-  el.style.transform = `translate3d(${sx}px, ${sy}px, 0) translate(-50%, -100%)`;
+  if (Math.abs(dx) > DEADZONE_PX) smoothState.x += dx * FOLLOW;
+  else smoothState.x = tx;
+
+  if (Math.abs(dy) > DEADZONE_PX) smoothState.y += dy * FOLLOW;
+  else smoothState.y = ty;
+
+  smoothState.x = Math.round(smoothState.x * dpr) / dpr;
+  smoothState.y = Math.round(smoothState.y * dpr) / dpr;
+
+  el.style.transform = `translate3d(${smoothState.x}px, ${smoothState.y}px, 0) translate(-50%, -100%)`;
 }
 
 function updateOverheadPrayers() {
@@ -1233,6 +1298,20 @@ const boss = createBoss(THREE, {
   onAttack: handleBossAttack,
 });
 
+// ===== Create prayer sprite textures + sprites =====
+prayerTexRange = makePrayerSpriteTexture(THREE, "🏹");
+prayerTexMage  = makePrayerSpriteTexture(THREE, "🔥");
+
+playerPrayerSprite = makePrayerSprite(THREE, prayerTexRange);
+bossPrayerSprite   = makePrayerSprite(THREE, prayerTexRange);
+
+scene.add(playerPrayerSprite);
+scene.add(bossPrayerSprite);
+
+// initial state
+setSpritePrayer(playerPrayerSprite, playerPrayer);
+setSpritePrayer(bossPrayerSprite, boss.getProtectionPrayer?.() === "MAGE" ? Prayer.MAGE : Prayer.RANGE);
+
 
 // ===== Targeting (target + ring + click-to-set) =====
 const targeting = createTargeting(THREE, {
@@ -1540,7 +1619,24 @@ function animate(now) {
   projectiles.updateVisual(dt);
   cameraCtl.update(dt);
   updateHitSplats(dt);
-  updateOverheadPrayers();
+
+    // ===== Update prayer sprites (stable in 3D) =====
+    // Player
+    if (playerPrayerSprite) {
+      playerPrayerSprite.position.set(player.renderX + 0.5, 1.55, player.renderY + 0.5);
+      setSpritePrayer(playerPrayerSprite, playerPrayer);
+    }
+
+    // Boss
+    if (bossPrayerSprite && boss?.mesh) {
+      const wp = new THREE.Vector3();
+      boss.mesh.getWorldPosition(wp);
+      bossPrayerSprite.position.set(wp.x, wp.y + 1.65, wp.z);
+
+      const bossPr = boss.getProtectionPrayer?.() || "RANGE";
+      setSpritePrayer(bossPrayerSprite, bossPr === "MAGE" ? Prayer.MAGE : Prayer.RANGE);
+    }
+
 
   renderer.render(scene, camera);
   
