@@ -410,12 +410,16 @@ function seedStarterInventoryFromSettings() {
   const fishCount = Math.min(26, Math.max(0, Number(fishInput?.value || 10)));
 
   clearInventory();
-  addItemToInventory("STAFF", 1);
-  addItemToInventory("BOW", 1);
+
+  // Only add weapons that are NOT currently equipped
+  if (playerAction.equippedWeapon !== "STAFF") addItemToInventory("STAFF", 1);
+  if (playerAction.equippedWeapon !== "BOW") addItemToInventory("BOW", 1);
+
   addItemToInventory("PADDLEFISH", fishCount);
 
   renderInventory(invGridEl);
 }
+
 
 // ===== Inventory: seed + first render =====
 if (invGridEl) {
@@ -436,14 +440,30 @@ if (invGridEl) {
     const def = ITEM_DEFS[stack.id];
     if (!def) return;
 
-    // Equip weapon
+    // ===============================
+    // Equip weapon (weapons removed while equipped)
+    // ===============================
     if (def.type === "WEAPON") {
-      playerAction.equippedWeapon = stack.id; // "STAFF" or "BOW"
-      cancelPlayerAttack("equipped weapon");
-      console.log("Equipped weapon:", stack.id);
-      return;
-    }
+      const clickedWeapon = stack.id;
 
+      if (!playerAction.equippedWeapon) {
+        playerAction.equippedWeapon = clickedWeapon;
+        inventory.slots[idx] = null;
+        cancelPlayerAttack("equipped weapon");
+        renderInventory(invGridEl);
+        return;
+      }
+
+      const currentlyEquipped = playerAction.equippedWeapon;
+
+      if (currentlyEquipped !== clickedWeapon) {
+        playerAction.equippedWeapon = clickedWeapon;
+        inventory.slots[idx] = { id: currentlyEquipped, qty: 1 };
+        cancelPlayerAttack("swapped weapon");
+        renderInventory(invGridEl);
+        return;
+      }
+    }
     // Eat food
     if (def.type === "FOOD") {
       // 1) eat cooldown: once every 3 ticks
@@ -485,7 +505,6 @@ if (invGridEl) {
 
 
       // Reset equipment + timers too (optional but usually desired on reset)
-      playerAction.equippedWeapon = null;
       playerAction.attackCd = 0;
       playerAction.eatCd = 0;
 
