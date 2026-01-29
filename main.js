@@ -304,10 +304,11 @@ const playerPrayerOverhead = makePrayerOverheadEl("playerPrayerOverhead");
 const bossPrayerOverhead = makePrayerOverheadEl("bossPrayerOverhead");
 
 function prayerLabel(pr) {
-  if (pr === Prayer.RANGE) return "RANGE";
-  if (pr === Prayer.MAGE) return "MAGE";
+  if (pr === Prayer.RANGE) return "🏹";
+  if (pr === Prayer.MAGE) return "🔥";
   return "";
 }
+
 
 function setOverheadText(el, txt) {
   const inner = el.querySelector(".overheadPrayerInner");
@@ -822,7 +823,7 @@ function updateOverheadPrayers() {
 
   // --- Boss overhead: ALWAYS visible (even in lobby) ---
   const bossPr = boss.getProtectionPrayer?.() || "RANGE";
-  const bLabel = (bossPr === "MAGE") ? "MAGE" : "RANGE";
+  const bLabel = (bossPr === "MAGE") ? "🔥" : "🏹";
 
   const wp = new THREE.Vector3();
   boss.mesh.getWorldPosition(wp);
